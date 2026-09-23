@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OxygeNMedia</title>
+<meta name="description" content="Red social comunitaria: muro, chat, amigos, juegos, y créditos digitales Ox2. Únete a OxygeNMedia.">
+
+<!-- Open Graph: cómo se ve el link al compartirlo en WhatsApp, Facebook, Discord, etc. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="OxygeNMedia — Red social comunitaria">
+<meta property="og:description" content="Muro, chat, amigos, juegos, y créditos digitales Ox2. Únete a la comunidad.">
+<meta property="og:image" content="https://oxygenmedia.online/preview-og.png">
+<meta property="og:url" content="https://oxygenmedia.online/">
+
+<!-- Twitter/X Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OxygeNMedia — Red social comunitaria">
+<meta name="twitter:description" content="Muro, chat, amigos, juegos, y créditos digitales Ox2. Únete a la comunidad.">
+<meta name="twitter:image" content="https://oxygenmedia.online/preview-og.png">
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<script src="/tema-inline.js"></script>
+
+<!-- Google reCAPTCHA v3: genera un token "invisible" (sin puzzles ni checkboxes)
+     que se guarda junto con el registro para revisión manual de cuentas sospechosas.
+     No bloquea nada por sí solo — ver auth.js para el detalle de qué se guarda. -->
+<script src="https://www.google.com/recaptcha/api.js?render=6LcaXZQtAAAAAHUT5mTl3W8UOlzl7fwVK5DdoZJw"></script>
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #0f1420;
+    --card: #1a2233;
+    --border: #2a3550;
+    --accent: #5b8def;
+    --accent-hover: #4a7ad9;
+    --text: #e8ecf5;
+    --text-dim: #8b96b0;
+    --danger: #e35d5d;
+    --success: #4caf7d;
+    --warn: #e0a941;
+    --radius: 14px;
+    --card-shadow: none;
+    --input-bg: #10182a;
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-weight-heading: 700;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden; /* evita scroll de la página completa; solo el contenido interno hace scroll */
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    overscroll-behavior: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: var(--font-weight-heading); }
+
+  /* Layout raíz: header fijo arriba + área de contenido que ocupa el resto */
+  .app-shell {
+    height: 100vh;
+    height: 100dvh; /* respeta la barra de navegación de móviles */
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-size: 17px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hamburger-btn {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+  }
+  header .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  /* Campanita de notificaciones */
+  .bell-wrapper { position: relative; }
+  .bell-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text);
+    width: 38px; height: 38px; border-radius: var(--radius); font-size: 17px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+  }
+  .bell-btn:hover { background: var(--card); }
+  .bell-badge {
+    position: absolute; top: -4px; right: -4px;
+    background: var(--danger); color: white; font-size: 10px; font-weight: 700;
+    min-width: 17px; height: 17px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px;
+    border: 2px solid var(--bg);
+  }
+
+  .notif-panel {
+    position: absolute; top: calc(100% + 8px); right: 0; width: 320px; max-width: 88vw;
+    max-height: 420px; overflow-y: auto; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 80; display: none;
+  }
+  .notif-panel.open { display: block; }
+  .notif-panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600;
+  }
+  .notif-panel-header button { padding: 4px 8px; font-size: 11px; }
+  .notif-item {
+    padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:hover { background: var(--input-bg); }
+  .notif-item.no-leida { background: rgba(91,141,239,0.06); }
+  .notif-item .notif-texto { color: var(--text); }
+  .notif-item .notif-fecha { font-size: 11px; color: var(--text-dim); }
+  .notif-item .notif-actions { display: flex; gap: 6px; margin-top: 4px; }
+  .notif-item .notif-actions button { padding: 5px 10px; font-size: 12px; }
+  .notif-empty { padding: 30px 16px; text-align: center; color: var(--text-dim); font-size: 13px; }
+
+  /* Área de contenido: la única parte que hace scroll (vertical) */
+  .content-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: var(--font-body);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:active { transform: scale(0.97); }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  button.secondary:hover { background: var(--card); }
+  .container {
+    max-width: 480px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 28px;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card h2 { margin-top: 0; }
+  input, select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 14px;
+  }
+  label {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .error-msg {
+    background: rgba(227, 93, 93, 0.12);
+    color: var(--danger);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .msg {
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+  }
+  .msg.ok { background: rgba(76, 175, 125, 0.12); color: var(--success); }
+  .msg.error { background: rgba(227, 93, 93, 0.12); color: var(--danger); }
+  .toggle-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .toggle-link a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .pending-box {
+    text-align: center;
+  }
+  .pending-box .icon { font-size: 40px; margin-bottom: 12px; }
+  .hidden { display: none !important; }
+
+  /* Vista de recursos */
+  .main-content { max-width: 900px; margin: 0 auto; padding: 16px; }
+  .filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filters select { width: auto; margin-bottom: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .resource-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .resource-card h3 { margin: 0 0 8px 0; font-size: 16px; }
+  .resource-card p { color: var(--text-dim); font-size: 13px; margin: 0 0 12px 0; }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-right: 6px;
+    margin-bottom: 8px;
+  }
+  .badge.gratis { background: rgba(76, 175, 125, 0.15); color: var(--success); }
+  .badge.pago { background: rgba(224, 169, 65, 0.15); color: var(--warn); }
+  .badge.categoria { background: rgba(91, 141, 239, 0.15); color: var(--accent); }
+  .empty-state { text-align: center; color: var(--text-dim); padding: 60px 20px; }
+
+  /* ===== Drawer (menú lateral deslizable) ===== */
+  .drawer-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 90; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .drawer {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px; max-width: 82vw;
+    background: var(--card); border-right: 1px solid var(--border);
+    z-index: 91; transform: translateX(-100%); transition: transform 0.22s ease;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-profile {
+    padding: 20px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .drawer-avatar {
+    width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; flex-shrink: 0; font-size: 16px;
+  }
+  .drawer-profile .nombre { font-weight: 600; font-size: 14px; }
+  .drawer-profile .username { font-size: 12px; color: var(--text-dim); }
+
+  .drawer-links { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .drawer-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 18px; color: var(--text); text-decoration: none; font-size: 14px;
+    cursor: pointer; border: none; background: none; width: 100%; text-align: left;
+  }
+  .drawer-link:hover { background: var(--input-bg); }
+  .drawer-link .icon { font-size: 17px; width: 22px; text-align: center; }
+  .drawer-section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-dim); padding: 14px 18px 6px;
+  }
+  .drawer-footer { padding: 12px 16px; border-top: 1px solid var(--border); }
+  .drawer-footer button { width: 100%; }
+
+  .tema-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: transparent; cursor: pointer; width: 100%; text-align: left;
+    font-size: 13px; color: var(--text); transition: all 0.15s ease;
+  }
+  .tema-chip:hover { background: rgba(255,255,255,0.05); }
+  .tema-chip.activo { border-color: var(--accent); background: rgba(91,141,239,0.08); }
+  .tema-chip .tema-swatch {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+  }
+  .tema-chip .tema-nombre { font-weight: 600; }
+  .tema-chip .tema-check { margin-left: auto; opacity: 0; color: var(--accent); }
+  .tema-chip.activo .tema-check { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <header>
+    <h1>
+      <button class="hamburger-btn hidden" id="btnAbrirDrawer">☰</button>
+      🌐 OxygeNMedia
+    </h1>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="bell-wrapper hidden" id="bellWrapper">
+        <button class="bell-btn" id="btnBell">🔔<span class="bell-badge hidden" id="bellBadge">0</span></button>
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-panel-header">
+            <span>Notificaciones</span>
+            <button class="secondary" id="btnMarcarTodasLeidas">Marcar todas leídas</button>
+          </div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+      <div class="user-info" id="userInfo"></div>
+    </div>
+  </header>
+
+  <div class="content-area">
+    <!-- Vista: Login / Registro -->
+    <div class="container" id="authView">
+      <div class="card">
+        <h2 id="authTitle">Iniciar sesión</h2>
+        <div class="error-msg" id="authError"></div>
+
+        <div id="nombreField" class="hidden">
+          <label>Nombre de usuario</label>
+          <input type="text" id="inputNombre" placeholder="Tu nombre">
+        </div>
+
+        <label>Correo</label>
+        <input type="email" id="inputEmail" placeholder="tucorreo@ejemplo.com">
+
+        <label>Contraseña</label>
+        <input type="password" id="inputPassword" placeholder="••••••••">
+
+        <div id="confirmarPasswordField" class="hidden">
+          <label>Confirmar contraseña</label>
+          <input type="password" id="inputConfirmarPassword" placeholder="••••••••">
+        </div>
+
+        <div id="terminosField" class="hidden" style="display:flex; align-items:flex-start; gap:8px; margin-bottom:14px;">
+          <input type="checkbox" id="checkTerminos" style="width:auto; margin:3px 0 0;">
+          <label for="checkTerminos" style="margin:0; font-size:13px; color:var(--text-dim); cursor:pointer;">
+            Acepto los <a href="/terminos" target="_blank" style="color:var(--accent);">términos y condiciones</a> de OxygeNMedia
+          </label>
+        </div>
+
+        <button id="btnSubmitAuth" style="width:100%">Entrar</button>
+
+        <div class="toggle-link" id="forgotPasswordLink">
+          <a id="btnOlvideContrasena">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <div class="msg" id="resetMsg" style="display:none; margin-top:10px;"></div>
+
+        <div class="toggle-link" style="margin-top:8px;">
+          <span id="toggleText">¿No tienes cuenta?</span>
+          <a id="toggleLink">Solicitar acceso</a>
+        </div>
+
+        <div class="toggle-link" style="margin-top:8px;">
+          <a href="https://wa.me/529844681306?text=Hola%2C%20quisiera%20solicitar%20acceso%20a%20OxygeNMedia" target="_blank" style="color:#4caf7d;">
+            📱 Solicitar acceso privado por WhatsApp
+          </a>
+        </div>
+
+        <div class="toggle-link" style="margin-top:8px;">
+          <a href="/comprar-giftcard" style="color:#e0a941;">
+            🎁 Comprar una tarjeta de regalo Ox2
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vista: Pendiente de aprobación o suspendido -->
+    <div class="container hidden" id="pendingView">
+      <div class="card pending-box">
+        <div class="icon" id="pendingIcon">⏳</div>
+        <h2 id="pendingTitulo">Tu cuenta está pendiente</h2>
+        <p style="color:var(--text-dim)" id="pendingTexto">Un administrador debe aprobar tu acceso. Vuelve a intentar más tarde o pregúntale directamente.</p>
+        <button class="secondary" id="btnLogoutPending">Cerrar sesión</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import { registrarUsuario, iniciarSesion, cerrarSesion, observarSesion, traducirErrorAuth, enviarCorreoRestablecer, cuentaBloqueada, verificarMantenimiento } from "./auth.js";
+import { guardarCodigoReferidoDeUrl, obtenerCodigoReferidoPendiente, limpiarCodigoReferidoPendiente, reclamarLinkAfiliado, describirRecompensa } from "./afiliados.js";
+
+// Si llegamos con ?ref=CODIGO en la URL, lo guardamos para intentar
+// reclamarlo en cuanto la sesión quede confirmada (más abajo).
+guardarCodigoReferidoDeUrl();
+
+let modoRegistro = false;
+let seAcabaDeRegistrar = false; // true solo durante esta sesión de pestaña, justo tras un registro exitoso
+
+const authView = document.getElementById("authView");
+const pendingView = document.getElementById("pendingView");
+const userInfo = document.getElementById("userInfo");
+const btnAbrirDrawer = document.getElementById("btnAbrirDrawer");
+
+const authTitle = document.getElementById("authTitle");
+const authError = document.getElementById("authError");
+const nombreField = document.getElementById("nombreField");
+const terminosField = document.getElementById("terminosField");
+const checkTerminos = document.getElementById("checkTerminos");
+const inputNombre = document.getElementById("inputNombre");
+const inputEmail = document.getElementById("inputEmail");
+const inputPassword = document.getElementById("inputPassword");
+const confirmarPasswordField = document.getElementById("confirmarPasswordField");
+const inputConfirmarPassword = document.getElementById("inputConfirmarPassword");
+const btnSubmitAuth = document.getElementById("btnSubmitAuth");
+const toggleLink = document.getElementById("toggleLink");
+const toggleText = document.getElementById("toggleText");
+const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+const btnOlvideContrasena = document.getElementById("btnOlvideContrasena");
+const resetMsg = document.getElementById("resetMsg");
+
+function mostrarError(msg) {
+  authError.textContent = msg;
+  authError.style.display = "block";
+}
+function ocultarError() {
+  authError.style.display = "none";
+}
+
+toggleLink.addEventListener("click", () => {
+  modoRegistro = !modoRegistro;
+  ocultarError();
+  resetMsg.style.display = "none";
+  if (modoRegistro) {
+    authTitle.textContent = "Solicitar acceso";
+    nombreField.classList.remove("hidden");
+    terminosField.classList.remove("hidden");
+    confirmarPasswordField.classList.remove("hidden");
+    btnSubmitAuth.textContent = "Solicitar acceso";
+    toggleText.textContent = "¿Ya tienes cuenta?";
+    toggleLink.textContent = "Iniciar sesión";
+    forgotPasswordLink.classList.add("hidden");
+  } else {
+    authTitle.textContent = "Iniciar sesión";
+    nombreField.classList.add("hidden");
+    terminosField.classList.add("hidden");
+    confirmarPasswordField.classList.add("hidden");
+    inputConfirmarPassword.value = "";
+    btnSubmitAuth.textContent = "Entrar";
+    toggleText.textContent = "¿No tienes cuenta?";
+    toggleLink.textContent = "Solicitar acceso";
+    forgotPasswordLink.classList.remove("hidden");
+  }
+});
+
+btnOlvideContrasena.addEventListener("click", async () => {
+  const email = inputEmail.value.trim();
+  resetMsg.style.display = "none";
+
+  if (!email) {
+    resetMsg.textContent = "Escribe tu correo arriba primero, luego da click aquí.";
+    resetMsg.className = "msg error";
+    resetMsg.style.display = "block";
+    return;
+  }
+
+  btnOlvideContrasena.style.pointerEvents = "none";
+  try {
+    await enviarCorreoRestablecer(email);
+    resetMsg.textContent = "Te enviamos un enlace a " + email + " para restablecer tu contraseña. Revisa también spam.";
+    resetMsg.className = "msg ok";
+  } catch (err) {
+    // Por seguridad, Firebase a veces no distingue "correo no existe" — igual mostramos algo útil
+    resetMsg.textContent = traducirErrorAuth(err);
+    resetMsg.className = "msg error";
+  }
+  resetMsg.style.display = "block";
+  btnOlvideContrasena.style.pointerEvents = "auto";
+});
+
+btnSubmitAuth.addEventListener("click", async () => {
+  ocultarError();
+  const email = inputEmail.value.trim();
+  const password = inputPassword.value;
+
+  if (!email || !password) {
+    mostrarError("Completa correo y contraseña.");
+    return;
+  }
+
+  if (modoRegistro && password !== inputConfirmarPassword.value) {
+    mostrarError("Las contraseñas no coinciden. Revísalas.");
+    return;
+  }
+
+  btnSubmitAuth.disabled = true;
+  try {
+    // Genera el token de reCAPTCHA v3 justo antes de la acción (recomendado por Google,
+    // ya que el token expira a los 2 minutos). No bloquea nada por sí solo — se guarda
+    // junto con el registro para que un admin pueda revisar cuentas sospechosas después
+    // (ver guardarTokenRecaptcha en auth.js).
+    const tokenRecaptcha = await obtenerTokenRecaptcha(modoRegistro ? "registro" : "login");
+
+    if (modoRegistro) {
+      const nombre = inputNombre.value.trim();
+      if (!nombre) {
+        mostrarError("Escribe tu nombre.");
+        btnSubmitAuth.disabled = false;
+        return;
+      }
+      if (!checkTerminos.checked) {
+        mostrarError("Debes aceptar los términos y condiciones para crear tu cuenta.");
+        btnSubmitAuth.disabled = false;
+        return;
+      }
+      await registrarUsuario(nombre, email, password, tokenRecaptcha);
+      seAcabaDeRegistrar = true;
+    } else {
+      await iniciarSesion(email, password);
+    }
+  } catch (err) {
+    mostrarError(traducirErrorAuth(err));
+  }
+  btnSubmitAuth.disabled = false;
+});
+
+// Envuelve grecaptcha.execute en una promesa y espera a que el script de Google
+// termine de cargar (a veces tarda un instante en estar listo tras abrir la página).
+function obtenerTokenRecaptcha(accion) {
+  return new Promise((resolve) => {
+    if (typeof grecaptcha === "undefined") { resolve(null); return; }
+    grecaptcha.ready(() => {
+      grecaptcha.execute("6LcaXZQtAAAAAHUT5mTl3W8UOlzl7fwVK5DdoZJw", { action: accion })
+        .then(resolve)
+        .catch(() => resolve(null));
+    });
+  });
+}
+
+document.getElementById("btnLogoutPending").addEventListener("click", cerrarSesion);
+
+function mostrarSoloVista(vista) {
+  authView.classList.add("hidden");
+  pendingView.classList.add("hidden");
+  vista.classList.remove("hidden");
+}
+
+// ============ SESIÓN ============
+// index.html ya NO muestra el muro ni los recursos — eso vive todo en muro.html
+// (fusión del feed social + recursos en una sola pantalla principal). Aquí solo
+// se resuelve login/registro y los estados bloqueantes (pendiente/suspendido/
+// mantenimiento); en cuanto la cuenta es válida, se redirige a muro.html.
+
+// Intenta reclamar el link de afiliado pendiente (si hay uno guardado de
+// ?ref=...) justo antes de entrar al muro. No bloquea la redirección si algo
+// falla — el reclamo es un extra, no debe impedir el acceso normal al sitio.
+// El resultado se guarda en sessionStorage para que muro-app.js lo muestre
+// como un mensaje amigable al llegar (ver "oxygenmedia_recompensa_afiliado").
+async function intentarReclamarAfiliado(uid) {
+  const codigo = obtenerCodigoReferidoPendiente();
+  if (!codigo) return;
+  limpiarCodigoReferidoPendiente(); // un solo intento por visita, sin importar el resultado
+
+  try {
+    const recompensa = await reclamarLinkAfiliado(codigo, uid, seAcabaDeRegistrar);
+    if (recompensa) {
+      const descripcion = await describirRecompensa(recompensa);
+      if (descripcion) {
+        sessionStorage.setItem("oxygenmedia_recompensa_afiliado", descripcion);
+      }
+    }
+  } catch (e) {
+    // DIAGNÓSTICO TEMPORAL: muestra el error real en consola para saber
+    // exactamente por qué falla el reclamo (regla de Firestore, link
+    // inexistente, etc.). Quitar este console.error una vez resuelto.
+    console.error("Error al reclamar link de afiliado:", e);
+  }
+}
+
+observarSesion((user, perfil) => {
+  if (!user) {
+    userInfo.innerHTML = "";
+    btnAbrirDrawer.classList.add("hidden");
+    mostrarSoloVista(authView);
+    return;
+  }
+
+  const estado = cuentaBloqueada(perfil);
+  if (estado.bloqueada) {
+    userInfo.innerHTML = `<button class="secondary" onclick="location.reload()">↻</button>`;
+    btnAbrirDrawer.classList.add("hidden");
+
+    if (estado.motivo === "suspendido") {
+      document.getElementById("pendingIcon").textContent = "🚫";
+      document.getElementById("pendingTitulo").textContent = "Tu cuenta ha sido suspendida";
+      document.getElementById("pendingTexto").textContent = estado.detalle
+        ? "Motivo: " + estado.detalle
+        : "Contacta a un administrador si crees que esto es un error.";
+    } else {
+      document.getElementById("pendingIcon").textContent = "⏳";
+      document.getElementById("pendingTitulo").textContent = "Tu cuenta está pendiente";
+      document.getElementById("pendingTexto").textContent = "Un administrador debe aprobar tu acceso. Vuelve a intentar más tarde o pregúntale directamente.";
+    }
+
+    mostrarSoloVista(pendingView);
+    return;
+  }
+
+  // Modo mantenimiento: bloquea a todos excepto admins
+  if (perfil.rol !== "admin") {
+    verificarMantenimiento().then(async estadoMant => {
+      if (estadoMant.activo) {
+        userInfo.innerHTML = `<button class="secondary" onclick="location.reload()">↻</button>`;
+        btnAbrirDrawer.classList.add("hidden");
+        document.getElementById("pendingIcon").textContent = "🛠️";
+        document.getElementById("pendingTitulo").textContent = "Sitio en mantenimiento";
+        let texto = estadoMant.motivo ? "Motivo: " + estadoMant.motivo : "Volvemos pronto.";
+        if (estadoMant.horario) texto += "\n" + estadoMant.horario;
+        if (estadoMant.activadoPorNombre) texto += "\nActivado por: " + estadoMant.activadoPorNombre;
+        document.getElementById("pendingTexto").textContent = texto;
+        document.getElementById("pendingTexto").style.whiteSpace = "pre-line";
+        mostrarSoloVista(pendingView);
+      } else {
+        await intentarReclamarAfiliado(user.uid);
+        location.href = "/muro";
+      }
+    });
+    return;
+  }
+
+  intentarReclamarAfiliado(user.uid).then(() => {
+    location.href = "/muro";
+  });
+});
+</script>
+
+<script>
+  // Registramos manualmente OneSignalSDKWorker.js (en vez de depender de que OneSignal
+  // lo haga solo) porque OneSignal únicamente auto-registra su service worker cuando el
+  // usuario YA dio permiso de notificaciones — si nunca lo activó, no se registraría
+  // nada, y como este mismo archivo también trae la caché de la PWA, ese usuario se
+  // quedaría sin caché offline. Registrándolo aquí de una vez, todos tienen el mismo
+  // service worker (con caché + soporte de push listo para cuando activen notificaciones),
+  // y como es un solo archivo en la raíz, no hay conflicto de scope con ningún otro.
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/OneSignalSDKWorker.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
