@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NovaStore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0B0F;
+    --surface:#14161D;
+    --surface-2:#1B1E27;
+    --line:#262933;
+    --text:#EDEDF2;
+    --text-dim:#8B8D9B;
+    --accent:#7C5CFF;
+    --accent-2:#FF6B4A;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:inherit}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces',serif}
+
+  header{
+    position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px clamp(20px,5vw,56px);
+    background:rgba(10,11,15,0.82);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{font-family:'Fraunces',serif;font-size:22px;font-weight:600;letter-spacing:0.2px;color:var(--text)}
+  .logo span{color:var(--accent)}
+  nav a{color:var(--text-dim);text-decoration:none;font-size:14px;margin-left:24px}
+  nav a:hover{color:var(--text)}
+
+  .hero{
+    padding:clamp(64px,10vw,120px) clamp(20px,5vw,56px) clamp(40px,6vw,72px);
+    max-width:1240px;margin:0 auto;
+  }
+  .hero h1{
+    font-size:clamp(40px,6vw,76px);
+    line-height:1.02;
+    font-weight:500;
+    margin:0 0 20px;
+    max-width:14ch;
+  }
+  .hero p{
+    color:var(--text-dim);
+    font-size:17px;
+    max-width:46ch;
+    line-height:1.6;
+    margin:0;
+  }
+
+  .shelf{max-width:1240px;margin:0 auto;padding:0 clamp(20px,5vw,56px) 100px}
+  .shelf-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:28px;flex-wrap:wrap;gap:12px;
+  }
+  .shelf-head h2{font-size:22px;font-weight:500;margin:0}
+  .count{color:var(--text-dim);font-size:14px}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:18px;
+  }
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    overflow:hidden;
+    cursor:pointer;
+    transition:border-color .2s ease;
+    display:flex;flex-direction:column;
+  }
+  .card:hover{border-color:#37394a}
+  .card .img-wrap{
+    aspect-ratio:4/5;
+    background:var(--surface-2);
+    overflow:hidden;
+    position:relative;
+  }
+  .card img{width:100%;height:100%;object-fit:cover;display:block}
+  .card .img-wrap.empty::after{
+    content:"";
+    position:absolute;inset:0;
+    background:linear-gradient(135deg,#1B1E27,#14161D);
+  }
+  .card-body{padding:16px 16px 18px}
+  .card-body .name{font-size:15.5px;font-weight:500;margin:0 0 6px;line-height:1.35}
+  .card-body .price{font-family:'Fraunces',serif;font-size:19px;color:var(--accent-2)}
+
+  .empty-state{
+    padding:80px 20px;text-align:center;color:var(--text-dim);
+    border:1px dashed var(--line);
+  }
+  .empty-state h3{color:var(--text);font-weight:500;margin:0 0 8px}
+
+  .modal-overlay{
+    position:fixed;inset:0;z-index:50;
+    background:rgba(6,7,10,0.72);
+    backdrop-filter:blur(4px);
+    display:none;align-items:flex-start;justify-content:center;
+    padding:env(safe-area-inset-top,0px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+    overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--line);
+    max-width:880px;width:100%;
+    margin-top:40px;
+    display:grid;grid-template-columns:1.1fr 1fr;
+    overflow:hidden;
+  }
+  @media (max-width:680px){ .modal{grid-template-columns:1fr} }
+  .modal-img{aspect-ratio:1/1;background:var(--surface-2)}
+  .modal-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .modal-info{padding:32px;display:flex;flex-direction:column}
+  .modal-info .name{font-size:26px;margin:0 0 10px;font-weight:500}
+  .modal-info .price{font-family:'Fraunces',serif;color:var(--accent-2);font-size:24px;margin-bottom:18px}
+  .modal-info .desc{color:var(--text-dim);font-size:15px;line-height:1.7;white-space:pre-wrap;flex:1}
+  .modal-close{
+    align-self:flex-end;background:none;border:none;color:var(--text-dim);
+    font-size:14px;cursor:pointer;padding:4px 0;margin-bottom:8px;
+  }
+  .modal-close:hover{color:var(--text)}
+  .contact-btn{
+    display:inline-block;text-align:center;margin-top:20px;
+    background:var(--accent);color:#fff;text-decoration:none;
+    padding:13px 20px;font-size:14.5px;font-weight:600;
+  }
+  .contact-btn:hover{background:#6c4ef0}
+
+  footer{
+    border-top:1px solid var(--line);
+    padding:32px clamp(20px,5vw,56px);
+    color:var(--text-dim);font-size:13px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  }
+  footer a{color:var(--text-dim)}
+
+  ::selection{background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">nova<span>store</span></div>
+  <nav><a href="#catalogo">Catálogo</a></nav>
+</header>
+
+<section class="hero">
+  <h1>Piezas nuevas, subidas cuando llegan.</h1>
+  <p>Sin catálogo fijo — lo que ves aquí es lo que hay ahora mismo. Toca cualquier pieza para ver detalles.</p>
+</section>
+
+<section class="shelf" id="catalogo">
+  <div class="shelf-head">
+    <h2>Disponible ahora</h2>
+    <span class="count" id="countLabel"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <h3>Aún no hay productos publicados</h3>
+    <p>Vuelve pronto — se están agregando piezas nuevas.</p>
+  </div>
+</section>
+
+<footer>
+  <span>© <span id="year"></span> NovaStore</span>
+  <a href="/admin.html">Admin</a>
+</footer>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-img"><img id="modalImg" src="" alt=""></div>
+    <div class="modal-info">
+      <button class="modal-close" id="modalClose">Cerrar ✕</button>
+      <h3 class="name" id="modalName"></h3>
+      <div class="price" id="modalPrice"></div>
+      <div class="desc" id="modalDesc"></div>
+      <a class="contact-btn" id="modalContact" href="#" target="_blank">Preguntar por esta pieza</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDgQ_Q1dxVN7OcxT03uupX_ZxuECS99nk",
+    authDomain: "nova-store-ink.firebaseapp.com",
+    projectId: "nova-store-ink",
+    storageBucket: "nova-store-ink.firebasestorage.app",
+    messagingSenderId: "131104612255",
+    appId: "1:131104612255:web:e782455afa299285e3e7aa",
+    measurementId: "G-9K9HEZDR9Q"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const CONTACT_LINK = "https://wa.me/50243197118";
+
+  const grid = document.getElementById("grid");
+  const emptyState = document.getElementById("emptyState");
+  const countLabel = document.getElementById("countLabel");
+
+  const fmtPrice = (n) => {
+    const num = Number(n);
+    if (Number.isNaN(num)) return n;
+    return num.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
+  };
+
+  const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+
+  onSnapshot(q, (snap) => {
+    grid.innerHTML = "";
+    const docs = snap.docs.filter(d => d.data().active !== false);
+
+    countLabel.textContent = docs.length ? `${docs.length} pieza${docs.length === 1 ? "" : "s"}` : "";
+    emptyState.style.display = docs.length ? "none" : "block";
+
+    docs.forEach((docSnap) => {
+      const p = docSnap.data();
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="img-wrap ${p.imageUrl ? "" : "empty"}">
+          ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${escapeHtml(p.name || "")}" loading="lazy">` : ""}
+        </div>
+        <div class="card-body">
+          <p class="name">${escapeHtml(p.name || "Sin nombre")}</p>
+          <div class="price">${p.price != null ? fmtPrice(p.price) : ""}</div>
+        </div>
+      `;
+      card.addEventListener("click", () => openModal(p));
+      grid.appendChild(card);
+    });
+  }, (err) => {
+    console.error(err);
+    emptyState.style.display = "block";
+    emptyState.querySelector("h3").textContent = "No se pudo cargar el catálogo";
+  });
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, (c) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  const overlay = document.getElementById("modalOverlay");
+  const modalImg = document.getElementById("modalImg");
+  const modalName = document.getElementById("modalName");
+  const modalPrice = document.getElementById("modalPrice");
+  const modalDesc = document.getElementById("modalDesc");
+  const modalContact = document.getElementById("modalContact");
+
+  function openModal(p){
+    modalImg.src = p.imageUrl || "";
+    modalName.textContent = p.name || "Sin nombre";
+    modalPrice.textContent = p.price != null ? fmtPrice(p.price) : "";
+    modalDesc.textContent = p.description || "";
+    modalContact.href = CONTACT_LINK;
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeModal(){
+    overlay.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  document.getElementById("modalClose").addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
+
