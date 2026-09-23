@@ -1,0 +1,986 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /usuarios/{userId} {
+      // Tabla fija de precios de boosters de Star Egg (en ENERGÍA). El cliente
+      // nunca decide el precio — solo puede pasar sí las reglas lo aceptan.
+      function precioBooster(id) {
+        return id == "click_x2" ? 150 :
+               id == "autoclicker" ? 300 : -1;
+      }
+
+      // Un usuario puede leer su propio documento
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // El admin puede leer todos los usuarios
+      allow read: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      // Cualquier usuario aprobado (y no suspendido) puede leer datos básicos de otros
+      // usuarios aprobados (necesario para buscar con quién chatear)
+      allow read: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('suspendido', false) == false &&
+                    resource.data.aprobado == true;
+
+      // Al registrarse, el usuario crea su propio documento. REGISTRO
+      // ABIERTO (lanzamiento): aprobado debe ser true desde la creación —
+      // antes se exigía false porque toda cuenta nueva esperaba revisión
+      // manual de un admin; eso ya no aplica. Sigue sin poder auto-asignarse
+      // el rol admin.
+      allow create: if request.auth != null &&
+                      request.auth.uid == userId &&
+                      request.resource.data.aprobado == true &&
+                      request.resource.data.rol == "estudiante";
+
+      // Un usuario puede editar SU PROPIO perfil (nombre, username, foto, descripción,
+      // proponer roles), siempre que NO cambie campos sensibles del sistema.
+      // El saldo NUNCA se toca desde esta regla — ver las dos reglas de abajo.
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('ox3Balance', 0) == resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []);
+
+      // Un usuario puede RESTAR de su propio saldo (nunca puede subírselo a sí mismo
+      // por su cuenta), y el resultado nunca puede quedar negativo. Se usa para pagar/transferir.
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('ox3Balance', 0) == resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.saldo >= 0 &&
+                      request.resource.data.saldo < resource.data.get('saldo', 0);
+
+      // Un usuario puede SUMARSE saldo a sí mismo únicamente al canjear una tarjeta
+      // de regalo: el incremento debe coincidir EXACTAMENTE con el monto de una
+      // tarjeta en /tarjetasRegalo que ya quedó marcada como canjeada por él mismo
+      // en esta misma operación (se crea en el mismo batch desde wallet.js).
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('ox3Balance', 0) == resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.saldo > resource.data.get('saldo', 0);
+
+      // Cualquier usuario autenticado puede SUMAR saldo a OTRO usuario (recibir una
+      // transferencia), siempre que el monto que recibe coincida EXACTAMENTE con un
+      // documento de transacción tipo "transferencia" recién creado en la misma
+      // operación, donde él es "paraUid" y el remitente es quien está autenticado.
+      // Esto se valida cruzando contra la colección "transacciones" (ver abajo),
+      // así nadie puede sumarse saldo sin que exista el registro correspondiente.
+      allow update: if request.auth != null && request.auth.uid != userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('ox3Balance', 0) == resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.saldo > resource.data.get('saldo', 0);
+
+      // ===== OX3 — moneda independiente de Ox2, generada en Star Egg =====
+      // Mismo espíritu que el bloque de saldo de arriba, pero cruzando SIEMPRE
+      // contra un documento de otra colección creado en la MISMA operación —
+      // no basta con "el número subió", tiene que existir la prueba.
+
+      // Un usuario puede RESTAR de su propio ox3Balance (gastar en una
+      // personalización, enviar una transferencia). Nunca queda negativo.
+      // Ox2, clicks, energía y boosters no se tocan en esta regla.
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.ox3Balance >= 0 &&
+                      request.resource.data.ox3Balance < resource.data.get('ox3Balance', 0);
+
+      // Un usuario puede SUMARSE ox3Balance a sí mismo ÚNICAMENTE si ya existe
+      // (en la misma operación) un documento en /recompensasStarEgg cuyo monto
+      // coincide EXACTO con el incremento. Ese documento de recompensa solo se
+      // pudo haber creado si su starEggClicks REAL (server) ya alcanzaba el
+      // umbral del hito — ver la colección recompensasStarEgg más abajo. El
+      // campo ultimoHitoStarEgg dice a cuál documento cruzar.
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.ox3Balance > resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.ox3Balance - resource.data.get('ox3Balance', 0) ==
+                        get(/databases/$(database)/documents/recompensasStarEgg/$(request.auth.uid + '_' + request.resource.data.ultimoHitoStarEgg)).data.monto;
+
+      // Cualquier usuario autenticado puede SUMAR ox3Balance a OTRO usuario
+      // (recibir una transferencia) únicamente si el incremento coincide EXACTO
+      // con un documento en /transferenciasOx3 recién creado en esta misma
+      // operación, donde él es paraUid y quien está autenticado es deUid. El
+      // campo ultimaTransferenciaOx3Id dice a cuál documento cruzar.
+      allow update: if request.auth != null && request.auth.uid != userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.ox3Balance > resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.ox3Balance - resource.data.get('ox3Balance', 0) ==
+                        get(/databases/$(database)/documents/transferenciasOx3/$(request.resource.data.ultimaTransferenciaOx3Id)).data.monto &&
+                      get(/databases/$(database)/documents/transferenciasOx3/$(request.resource.data.ultimaTransferenciaOx3Id)).data.paraUid == userId &&
+                      get(/databases/$(database)/documents/transferenciasOx3/$(request.resource.data.ultimaTransferenciaOx3Id)).data.deUid == request.auth.uid;
+
+      // Contador REAL de clicks de Star Egg (fuente de verdad para las
+      // recompensas — NO localStorage). Solo puede subir, y como máximo 30 por
+      // escritura: obliga al cliente a sincronizar en lotes pequeños en vez de
+      // saltar a un número enorme de una sola vez. No es a prueba de scripts
+      // automatizados que llamen a Firestore muchas veces seguidas (eso solo lo
+      // cierra una Cloud Function con rate-limiting real), pero cierra por
+      // completo el caso de "edito clickCount en DevTools y listo".
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('ox3Balance', 0) == resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.get('starEggEnergy', 0) == resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.starEggClicks is int &&
+                      request.resource.data.starEggClicks > resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.starEggClicks - resource.data.get('starEggClicks', 0) <= 30;
+
+      // ===== EGG ENERGY — moneda local de Star Egg (boosters + canje por Ox3) =====
+      // Al volverse canjeable por Ox3, deja de ser "solo cosmética": necesita el
+      // mismo tratamiento que starEggClicks. Contador REAL, solo sube, tope por
+      // escritura (más alto que clicks porque con boosters — x2, auto-clicker —
+      // un uso legítimo genera energía más rápido).
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('ox3Balance', 0) == resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.starEggEnergy is int &&
+                      request.resource.data.starEggEnergy > resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.starEggEnergy - resource.data.get('starEggEnergy', 0) <= 120;
+
+      // Canjear ENERGÍA por OX3, tasa fija: 100 energía = 2 Ox3. La energía que
+      // se gasta y el Ox3 que se gana están en el MISMO documento, así que la
+      // regla puede cruzar los dos deltas directamente (sin necesitar un
+      // documento aparte como candado) — la multiplicación cruzada obliga a que
+      // la tasa sea EXACTA, cualquier otro cociente se rechaza.
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.get('starEggBoosters', []) == resource.data.get('starEggBoosters', []) &&
+                      request.resource.data.starEggEnergy is int &&
+                      request.resource.data.starEggEnergy >= 0 &&
+                      request.resource.data.starEggEnergy < resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.ox3Balance is int &&
+                      request.resource.data.ox3Balance > resource.data.get('ox3Balance', 0) &&
+                      (resource.data.get('starEggEnergy', 0) - request.resource.data.starEggEnergy) * 2 ==
+                        (request.resource.data.ox3Balance - resource.data.get('ox3Balance', 0)) * 100;
+
+      // Comprar un booster de Star Egg con ENERGÍA. El precio sale de la tabla
+      // fija precioBooster() (el cliente nunca lo decide), el booster no se
+      // puede comprar dos veces, y el array solo puede crecer en exactamente
+      // ese booster.
+      allow update: if request.auth != null && request.auth.uid == userId &&
+                      request.resource.data.aprobado == resource.data.aprobado &&
+                      request.resource.data.rol == resource.data.rol &&
+                      request.resource.data.get('saldo', 0) == resource.data.get('saldo', 0) &&
+                      request.resource.data.get('ox3Balance', 0) == resource.data.get('ox3Balance', 0) &&
+                      request.resource.data.get('starEggClicks', 0) == resource.data.get('starEggClicks', 0) &&
+                      request.resource.data.starEggEnergy is int &&
+                      request.resource.data.starEggEnergy >= 0 &&
+                      request.resource.data.starEggEnergy < resource.data.get('starEggEnergy', 0) &&
+                      request.resource.data.ultimoBoosterComprado is string &&
+                      !(resource.data.get('starEggBoosters', []).hasAny([request.resource.data.ultimoBoosterComprado])) &&
+                      request.resource.data.starEggBoosters ==
+                        resource.data.get('starEggBoosters', []).concat([request.resource.data.ultimoBoosterComprado]) &&
+                      resource.data.get('starEggEnergy', 0) - request.resource.data.starEggEnergy ==
+                        precioBooster(request.resource.data.ultimoBoosterComprado);
+
+      // Solo el admin puede DAR o QUITAR saldo libremente (sin las restricciones de arriba)
+      allow update: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+
+      // Solo el admin puede aprobar, cambiar roles de sistema, marcar pagos,
+      // aprobar rolesPerfil, o borrar usuarios (sin restricción de campos)
+      allow update, delete: if request.auth != null &&
+                    get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+    }
+
+    match /rolesDisponibles/{rolId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede ver la lista de roles (para elegir/proponer)
+      allow read: if esAprobadoUsuario() || esAdminUsuario();
+
+      // Cualquier usuario aprobado puede proponer un rol nuevo, queda como no aprobado
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.aprobado == false &&
+                      request.resource.data.creadoPor == request.auth.uid;
+
+      // Solo el admin puede aprobar o borrar roles
+      allow update, delete: if esAdminUsuario();
+    }
+
+    match /recursos/{recursoId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Público: cualquiera con sesión iniciada puede leer si es público
+      // Privado: solo usuarios aprobados
+      // OJO: este documento ya NO contiene "contenido" ni "imagenContenidoURL" —
+      // esos viven en la subcolección protegida de abajo
+      allow read: if resource.data.esPublico == true || esAprobadoUsuario();
+
+      // El admin puede crear/editar/borrar cualquier recurso, con cualquier precio.
+      // Un usuario aprobado normal puede crear un recurso, pero SOLO gratis
+      // (esGratis debe ser true, precio debe ser 0), y queda registrado como su autor.
+      allow create: if esAdminUsuario() ||
+                      (esAprobadoUsuario() &&
+                       request.resource.data.esGratis == true &&
+                       request.resource.data.precio == 0 &&
+                       request.resource.data.subidoPor == request.auth.uid);
+
+      // Editar/borrar: el admin puede todo. El autor original puede editar/borrar
+      // su propio recurso, siempre que se mantenga gratis.
+      allow update, delete: if esAdminUsuario() ||
+                      (esAprobadoUsuario() &&
+                       resource.data.subidoPor == request.auth.uid &&
+                       (request.method == 'delete' ||
+                        (request.resource.data.esGratis == true && request.resource.data.precio == 0)));
+
+      // Contenido real (texto + imagen). Solo accesible si:
+      // - el recurso es gratis, o
+      // - el usuario ya lo compró (su UID está en recursosComprados del recurso), o
+      // - el usuario es admin
+      match /contenidoProtegido/{docId} {
+        allow read: if request.auth != null && (
+                      get(/databases/$(database)/documents/recursos/$(recursoId)).data.esGratis == true ||
+                      (('compradoPor' in get(/databases/$(database)/documents/recursos/$(recursoId)).data) &&
+                        request.auth.uid in get(/databases/$(database)/documents/recursos/$(recursoId)).data.compradoPor) ||
+                      esAdminUsuario()
+                    );
+        // El admin puede escribir el contenido de cualquier recurso.
+        // El autor original puede escribir el contenido de SU PROPIO recurso.
+        allow write: if esAdminUsuario() ||
+                      (request.auth != null &&
+                       get(/databases/$(database)/documents/recursos/$(recursoId)).data.subidoPor == request.auth.uid);
+      }
+    }
+
+    match /chats/{chatId} {
+      function esAprobado() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdmin() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+      function esMiembro() {
+        return request.auth != null && request.auth.uid in resource.data.miembros;
+      }
+
+      // Solo miembros del chat (o admin) pueden leerlo
+      allow read: if esMiembro() || esAdmin();
+
+      // Cualquier usuario aprobado puede crear un chat, siempre que se incluya a sí mismo
+      allow create: if esAprobado() &&
+                      request.auth.uid in request.resource.data.miembros &&
+                      request.resource.data.creadoPor == request.auth.uid;
+
+      // Solo quien creó el grupo, un miembro (para info general), o el admin del sitio pueden actualizar
+      allow update: if esMiembro() &&
+                      (resource.data.creadoPor == request.auth.uid || esAdmin() ||
+                       // Permite que cualquier miembro actualice "ultimoMensaje"/"ultimaActividad" al mandar un mensaje
+                       true);
+
+      allow delete: if esAdmin() || (esMiembro() && resource.data.creadoPor == request.auth.uid);
+
+      match /mensajes/{mensajeId} {
+        allow read: if request.auth != null &&
+                      (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.miembros || esAdmin());
+        allow create: if request.auth != null &&
+                      request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.miembros &&
+                      request.resource.data.autorId == request.auth.uid;
+
+        // Editar/marcar-eliminado: el autor puede cambiar el texto y marcar "editado" o "eliminado".
+        // El admin del sitio también puede marcar un mensaje ajeno como "eliminado" (moderación),
+        // pero no puede reescribir el texto de alguien más como si lo hubiera escrito esa persona.
+        allow update: if request.auth != null &&
+                      request.resource.data.autorId == resource.data.autorId &&
+                      request.resource.data.fecha == resource.data.fecha &&
+                      (
+                        resource.data.autorId == request.auth.uid ||
+                        (esAdmin() && request.resource.data.eliminado == true)
+                      );
+
+        // Borrado real (poco usado, ya que preferimos marcar "eliminado" en vez de borrar
+        // el documento — pero se deja disponible para el autor o el admin)
+        allow delete: if request.auth != null &&
+                      (resource.data.autorId == request.auth.uid || esAdmin());
+      }
+    }
+    match /sugerencias/{sugerenciaId} {
+      function esAprobado() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdmin() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede leer todas las sugerencias (es tipo foro)
+      allow read: if esAprobado() || esAdmin();
+
+      // Cualquier usuario aprobado puede crear una sugerencia.
+      // Si es anónima, autorId debe ser null (no puede fingir ser otro usuario).
+      // Si no es anónima, autorId debe ser su propio uid (no puede poner el de otro).
+      allow create: if esAprobado() &&
+                      (request.resource.data.autorId == null ||
+                       request.resource.data.autorId == request.auth.uid);
+
+      // Solo el admin puede cambiar el estado (pendiente/revisada) o borrar
+      allow update, delete: if esAdmin();
+    }
+    match /juegos/{juegoId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede ver los juegos APROBADOS.
+      // El admin puede ver todos (incluidos pendientes, para revisarlos).
+      // El autor puede ver los suyos aunque estén pendientes.
+      allow read: if esAdminUsuario() ||
+                    (esAprobadoUsuario() && resource.data.aprobado == true) ||
+                    (request.auth != null && resource.data.subidoPor == request.auth.uid);
+
+      // Un admin que publica: aprobado = true directo.
+      // Un usuario normal que publica: aprobado = false (queda pendiente).
+      // Nadie puede subir un juego a nombre de otro (subidoPor debe ser su propio uid).
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.subidoPor == request.auth.uid &&
+                      (
+                        (esAdminUsuario() && request.resource.data.aprobado == true) ||
+                        (!esAdminUsuario() && request.resource.data.aprobado == false)
+                      );
+
+      // Solo el admin puede aprobar/rechazar o borrar cualquier juego.
+      // El autor puede borrar su propio juego (por si se arrepiente).
+      allow update: if esAdminUsuario();
+      allow delete: if esAdminUsuario() || (request.auth != null && resource.data.subidoPor == request.auth.uid);
+    }
+
+    match /notificaciones/{notifId} {
+      // Solo el dueño de la notificación puede leerla (o el admin, por soporte)
+      allow read: if request.auth != null &&
+                    (resource.data.paraUid == request.auth.uid ||
+                     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin");
+
+      // Cualquier usuario autenticado puede crear una notificación PARA OTRO usuario
+      // (ej. al enviar solicitud de amistad), pero no puede crearla ya marcada como leída
+      allow create: if request.auth != null &&
+                      request.resource.data.leida == false;
+
+      // El dueño puede actualizar (marcar como leída) o borrar su propia notificación
+      allow update, delete: if request.auth != null && resource.data.paraUid == request.auth.uid;
+    }
+
+    match /amistades/{amistadId} {
+      function esParteDeLaAmistad() {
+        return request.auth != null && request.auth.uid in resource.data.usuarios;
+      }
+
+      // Solo las dos personas involucradas pueden leer su amistad.
+      // Si el documento no existe todavía, Firestore permite el intento de lectura
+      // igual (devuelve "no encontrado" al cliente) siempre que quien pregunta esté
+      // autenticado — evita el error de permisos al comprobar amistades inexistentes.
+      allow read: if request.auth != null &&
+                    (!exists(/databases/$(database)/documents/amistades/$(amistadId)) ||
+                     esParteDeLaAmistad());
+
+      // Cualquier usuario autenticado puede iniciar una solicitud, siempre que:
+      // - se incluya a sí mismo en "usuarios"
+      // - quede como "pendiente" (no puede crear una ya "aceptada")
+      // - él mismo sea quien "solicitadoPor"
+      allow create: if request.auth != null &&
+                      request.auth.uid in request.resource.data.usuarios &&
+                      request.resource.data.estado == "pendiente" &&
+                      request.resource.data.solicitadoPor == request.auth.uid;
+
+      // Cualquiera de los dos puede actualizar (aceptar) o borrar (rechazar/eliminar amistad)
+      allow update, delete: if esParteDeLaAmistad();
+    }
+    match /logs/{logId} {
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+      // Los logs son solo para admins: leerlos y crearlos.
+      // Nadie puede editarlos ni borrarlos (integridad del historial).
+      allow read: if esAdminUsuario();
+      allow create: if esAdminUsuario() && request.resource.data.adminUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    match /transacciones/{transaccionId} {
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+      // Cada quien puede ver las transacciones donde participó (envió o recibió).
+      // El admin puede ver todas (para auditoría).
+      allow read: if request.auth != null &&
+                    (resource.data.deUid == request.auth.uid ||
+                     resource.data.paraUid == request.auth.uid ||
+                     esAdminUsuario());
+
+      // Cualquier usuario autenticado puede registrar una transferencia que ÉL envía
+      // (deUid debe ser su propio uid). El admin puede registrar cualquier tipo
+      // (dar/quitar saldo sin remitente, o ajustes).
+      allow create: if request.auth != null &&
+                      (request.resource.data.deUid == request.auth.uid || esAdminUsuario());
+
+      // Las transacciones son un historial: nadie las edita ni borra, ni siquiera el admin
+      allow update, delete: if false;
+    }
+
+    match /publicaciones/{pubId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede leer el muro
+      allow read: if esAprobadoUsuario() || esAdminUsuario();
+
+      // Cualquier usuario aprobado puede publicar, siempre que figure como su propio autor.
+      // El texto tiene un límite de 750 caracteres — sin esto, cualquiera podría escribir
+      // desde la consola del navegador un texto de varios MB, saltándose el maxlength del
+      // HTML (que solo protege el formulario normal, no una escritura directa a Firestore).
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.autorId == request.auth.uid &&
+                      request.resource.data.likesCount == 0 &&
+                      request.resource.data.comentariosCount == 0 &&
+                      request.resource.data.texto is string &&
+                      request.resource.data.texto.size() <= 750;
+
+      // El autor puede editar su propia publicación (texto/imagen), sin tocar los contadores
+      // directamente (esos solo cambian vía la lógica de likes/comentarios de abajo).
+      // El admin puede borrar cualquier publicación (moderación); el autor borra la suya.
+      allow update: if esAprobadoUsuario() &&
+                      resource.data.autorId == request.auth.uid &&
+                      request.resource.data.autorId == resource.data.autorId;
+      // Actualización de contadores: cualquier aprobado puede incrementar/decrementar
+      // en exactamente 1 (lo hace la transacción de dar/quitar like o comentar/borrar comentario)
+      allow update: if esAprobadoUsuario() &&
+                      request.resource.data.autorId == resource.data.autorId &&
+                      request.resource.data.texto == resource.data.texto &&
+                      (
+                        (request.resource.data.likesCount == resource.data.likesCount + 1 ||
+                         request.resource.data.likesCount == resource.data.likesCount - 1) &&
+                        request.resource.data.comentariosCount == resource.data.comentariosCount
+                        ||
+                        (request.resource.data.comentariosCount == resource.data.comentariosCount + 1 ||
+                         request.resource.data.comentariosCount == resource.data.comentariosCount - 1) &&
+                        request.resource.data.likesCount == resource.data.likesCount
+                      );
+
+      allow delete: if esAdminUsuario() || (esAprobadoUsuario() && resource.data.autorId == request.auth.uid);
+
+      match /likes/{uid} {
+        // Cualquiera puede ver quién dio like (para saber si ya diste el tuyo)
+        allow read: if esAprobadoUsuario() || esAdminUsuario();
+        // Solo puedes crear/borrar TU PROPIO like (el ID del documento es tu propio uid)
+        allow create, delete: if esAprobadoUsuario() && request.auth.uid == uid;
+      }
+
+      match /comentarios/{comentarioId} {
+        allow read: if esAprobadoUsuario() || esAdminUsuario();
+        allow create: if esAprobadoUsuario() &&
+                        request.resource.data.autorId == request.auth.uid &&
+                        request.resource.data.texto is string &&
+                        request.resource.data.texto.size() <= 500;
+        // El autor del comentario o el admin pueden borrarlo (moderación)
+        allow delete: if esAdminUsuario() || (esAprobadoUsuario() && resource.data.autorId == request.auth.uid);
+      }
+    }
+
+    match /tarjetasRegalo/{codigo} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede leer una tarjeta (necesario para verificar
+      // el código antes de canjear, y para que el admin vea el estado de todas).
+      // El admin puede leer todas incluso si no está "aprobado" en el sentido estricto.
+      allow read: if esAprobadoUsuario() || esAdminUsuario();
+
+      // Solo el admin puede crear tarjetas nuevas, siempre sin canjear al crearlas
+      allow create: if esAdminUsuario() &&
+                      request.resource.data.canjeada == false &&
+                      request.resource.data.monto > 0 &&
+                      request.resource.data.creadoPor == request.auth.uid;
+
+      // Canjear: cualquier usuario aprobado puede marcar como canjeada una tarjeta
+      // que EXISTA y que aún NO esté canjeada, siempre que:
+      // - el monto no cambie (no puede inventarse un monto distinto)
+      // - quede marcada canjeada = true
+      // - canjeadaPor sea su propio uid (no puede canjear a nombre de otro)
+      allow update: if esAprobadoUsuario() &&
+                      resource.data.canjeada == false &&
+                      request.resource.data.canjeada == true &&
+                      request.resource.data.monto == resource.data.monto &&
+                      request.resource.data.canjeadaPor == request.auth.uid;
+
+      // Solo el admin puede borrar tarjetas (ej. cancelar una no usada)
+      allow delete: if esAdminUsuario();
+    }
+
+    match /actualizaciones/{id} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede leer el registro de actualizaciones
+      allow read: if esAprobadoUsuario() || esAdminUsuario();
+
+      // Solo el admin puede publicar, editar o borrar actualizaciones
+      allow create, update, delete: if esAdminUsuario();
+    }
+
+    match /bloqueos/{bloqueoId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+
+      // Cualquiera puede consultar UN documento específico por su ID determinístico
+      // ("{deUid}_{aUid}") con getDoc — eso es lo que necesita hayBloqueoEntre() antes
+      // de dejar chatear/seguir a alguien: solo confirma "¿existe este bloqueo puntual?",
+      // sin exponer la lista completa de bloqueos de nadie.
+      allow get: if esAprobadoUsuario();
+
+      // Para listar (query), solo puedes traer TUS PROPIOS bloqueos — usado por
+      // listarBloqueados() en una futura pantalla de "usuarios bloqueados".
+      allow list: if esAprobadoUsuario() && request.query.where.deUid == request.auth.uid;
+
+      // Solo puedes crear un bloqueo donde TÚ eres quien bloquea
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.deUid == request.auth.uid &&
+                      request.resource.data.aUid != request.auth.uid;
+
+      // Solo puedes borrar tu propio bloqueo (desbloquear)
+      allow delete: if esAprobadoUsuario() && resource.data.deUid == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /seguidores/{relacionId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede leer relaciones de seguimiento (para pintar
+      // listas de seguidores/siguiendo y saber si ya sigue a alguien)
+      allow read: if esAprobadoUsuario() || esAdminUsuario();
+
+      // Solo puedes crear una relación donde TÚ eres el seguidor (no puedes hacer
+      // que alguien más siga a otro usuario en su nombre)
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.seguidorUid == request.auth.uid &&
+                      request.resource.data.seguidoUid != request.auth.uid;
+
+      // Solo puedes borrar tu propia relación de seguimiento (dejar de seguir)
+      allow delete: if esAprobadoUsuario() && resource.data.seguidorUid == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /reportes/{reporteId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Solo el admin puede leer los reportes (nadie más ve quién reportó qué)
+      allow read: if esAdminUsuario();
+
+      // Cualquier usuario aprobado puede crear un reporte, siempre que figure como
+      // su propio reportante y quede en estado "pendiente" (no puede auto-resolverse)
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.reportanteUid == request.auth.uid &&
+                      request.resource.data.estado == "pendiente";
+
+      // Solo el admin puede actualizar (resolver/descartar) o borrar reportes
+      allow update, delete: if esAdminUsuario();
+    }
+
+    match /historialOxGratis/{entradaId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+
+      // Cada quien solo ve SU PROPIO historial — es información de saldo, no algo
+      // que otros usuarios necesiten ver del perfil de alguien más.
+      allow read: if esAprobadoUsuario() && resource.data.uid == request.auth.uid;
+
+      // Solo el propio sistema de recompensas escribe aquí (vía recompensas.js), y
+      // siempre a nombre de quien realmente ganó el Ox2 — nunca se puede crear una
+      // entrada a nombre de otro usuario ni con una cantidad negativa (que rebajaría
+      // el rastro de forma engañosa).
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.cantidad is number &&
+                      request.resource.data.cantidad > 0;
+      allow update, delete: if false;
+    }
+
+    match /cupoRecompensas/{mesId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario aprobado puede LEER cuánto cupo mensual queda (se muestra en
+      // la billetera y en el panel admin). Para escribir: el admin puede corregir el
+      // cupo manualmente sin restricción; un usuario normal solo puede INCREMENTAR
+      // gastadoMxn (nunca bajarlo ni ponerlo en negativo) — así la única forma de que
+      // un usuario "escriba" aquí es sumando lo que su propio canje costó, igual que
+      // hace canjearRecompensa(), y no puede manipular el cupo para saltarse el límite
+      // o bloquearlo arbitrariamente para los demás.
+      allow read: if esAprobadoUsuario() || esAdminUsuario();
+      allow write: if esAdminUsuario() ||
+                     (esAprobadoUsuario() &&
+                      request.resource.data.gastadoMxn is number &&
+                      request.resource.data.gastadoMxn > (resource == null ? 0 : resource.data.gastadoMxn));
+    }
+
+    match /canjesRecompensas/{canjeId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // El usuario ve solo sus propios canjes; el admin ve todos (para la cola de entrega).
+      allow read: if esAdminUsuario() ||
+                    (esAprobadoUsuario() && resource.data.uid == request.auth.uid);
+
+      // Solo se puede crear un canje propio, y siempre en estado "pendiente" (no se
+      // puede crear ya como "entregado" para saltarse la entrega real del admin).
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.estado == "pendiente";
+
+      // Solo el admin puede marcar un canje como entregado.
+      allow update, delete: if esAdminUsuario();
+    }
+
+    match /spotifyTokens/{uid} {
+      // Solo el propio dueño puede leer o escribir su token de Spotify — nadie más,
+      // ni siquiera el admin, porque un access_token de Spotify equivale a tener
+      // acceso a la cuenta de esa persona mientras sea válido.
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /codigosCanje/{codigoId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Solo el admin puede LISTAR todos los códigos (historial completo del panel
+      // admin). Un usuario aprobado puede leer un código puntual por su ID exacto
+      // solo si ÉL fue quien lo compró — así nadie puede ver el código de otra
+      // persona aunque conozca el ID exacto.
+      allow get: if esAdminUsuario() ||
+                   (esAprobadoUsuario() && resource.data.compradorUid == request.auth.uid);
+      allow list: if esAdminUsuario();
+
+      // El código se crea automáticamente justo después de que comprarRecursoConSaldo
+      // (wallet.js) ya completó la compra con éxito — por eso, en vez de exigir que
+      // sea el admin quien lo cree, se valida que: 1) el creador figure como su
+      // propio comprador, y 2) ese mismo recurso YA esté en su recursosComprados
+      // (es decir, la compra real en Firestore ya se registró, no se puede fabricar
+      // un código sin haber comprado nada primero).
+      allow create: if esAdminUsuario() ||
+                      (esAprobadoUsuario() &&
+                       request.resource.data.compradorUid == request.auth.uid &&
+                       get(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+                         .data.recursosComprados.hasAny([request.resource.data.recursoId]));
+
+      allow update, delete: if esAdminUsuario();
+    }
+
+    match /vulnerabilidades/{vulnId} {
+      function esAprobadoUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.aprobado == true;
+      }
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Solo el admin puede leer los reportes (no queremos que otros usuarios vean
+      // detalles de vulnerabilidades sin confirmar todavía, ni de quién las reportó).
+      allow read: if esAdminUsuario();
+
+      // Cualquier usuario aprobado puede reportar, siempre que figure como su propio
+      // reportante, en estado "pendiente" (no puede auto-confirmarse ni darse Ox2 a sí
+      // mismo), y con recompensaOx2 en 0 al crear (el admin es quien decide el monto).
+      allow create: if esAprobadoUsuario() &&
+                      request.resource.data.reportanteUid == request.auth.uid &&
+                      request.resource.data.estado == "pendiente" &&
+                      request.resource.data.recompensaOx2 == 0;
+
+      // Solo el admin puede actualizar (resolver) o borrar reportes.
+      allow update, delete: if esAdminUsuario();
+    }
+
+    match /configuracion/{docId} {
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+      // Cualquiera con sesión (incluso sin estar aprobado todavía) puede LEER el
+      // estado de mantenimiento -- se necesita antes de saber si puede pasar.
+      allow read: if request.auth != null;
+      // Solo el admin puede activar/desactivar mantenimiento
+      allow write: if esAdminUsuario();
+    }
+
+    match /linksAfiliado/{codigo} {
+      function esAdminUsuario() {
+        return request.auth != null &&
+               get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+      }
+
+      // Cualquier usuario autenticado puede leer un link específico (lo
+      // necesita reclamarLinkAfiliado() para validar que existe/está activo
+      // antes de intentar el reclamo). No se expone nada sensible aquí — solo
+      // el código, nombre, estado y recompensas configuradas, no datos de
+      // usuarios. Solo el admin puede LISTAR todos (para el panel).
+      allow get: if request.auth != null;
+      allow list: if esAdminUsuario();
+
+      // Solo el admin puede crear/editar/borrar links libremente.
+      allow create, delete: if esAdminUsuario();
+
+      // El admin puede actualizar cualquier campo. Un usuario aprobado
+      // reclamando el link solo puede INCREMENTAR usosActuales en exactamente
+      // 1, sin tocar ningún otro campo (nombre, recompensas, activo, límite)
+      // — es la única escritura que reclamarLinkAfiliado() necesita hacer
+      // sobre el propio documento del link.
+      allow update: if esAdminUsuario() ||
+                      (request.auth != null &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(["usosActuales"]) &&
+                       request.resource.data.usosActuales == resource.data.usosActuales + 1);
+
+      match /reclamos/{uid} {
+        // Cada quien puede leer/verificar solo su propio reclamo (no puede
+        // ver si otros usuarios ya reclamaron este link).
+        allow read: if request.auth != null && request.auth.uid == uid;
+
+        // Solo puedes crear TU PROPIO reclamo, y una sola vez: si el
+        // documento ya existe, esta regla ya no aplicaría para un create
+        // (Firestore rechaza crear sobre un documento existente de por sí),
+        // así que el candado real de "una vez por usuario" queda garantizado
+        // sin depender de que el cliente se porte bien.
+        allow create: if request.auth != null && request.auth.uid == uid;
+
+        // Nadie edita ni borra un reclamo ya hecho — es un registro histórico.
+        allow update, delete: if false;
+      }
+    }
+
+    // ===== OX3 — recompensas de Star Egg =====
+    // El ID del documento ES el candado: "{uid}_{hito}". Si ya existe, un
+    // create sobre el mismo ID falla automáticamente (Firestore no permite
+    // "crear" sobre un documento existente) — nadie puede reclamar el mismo
+    // hito dos veces, sin depender de nada del lado del cliente.
+    match /recompensasStarEgg/{recompensaId} {
+      function montoDeHito(hito) {
+        return hito == "starEgg_100" ? 3 :
+               hito == "starEgg_500" ? 9 :
+               hito == "starEgg_1000" ? 15 :
+               hito == "starEgg_5000" ? 60 :
+               hito == "starEgg_10000" ? 150 : -1;
+      }
+      function clicksDeHito(hito) {
+        return hito == "starEgg_100" ? 100 :
+               hito == "starEgg_500" ? 500 :
+               hito == "starEgg_1000" ? 1000 :
+               hito == "starEgg_5000" ? 5000 :
+               hito == "starEgg_10000" ? 10000 : 999999999;
+      }
+
+      allow read: if request.auth != null &&
+                    (resource.data.uid == request.auth.uid ||
+                     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin");
+
+      // El monto NUNCA lo decide el cliente: sale de la tabla fija montoDeHito().
+      // Y solo se puede crear si el contador REAL de clicks en Firestore
+      // (usuarios/{uid}.starEggClicks, no localStorage) ya alcanzó ese umbral.
+      allow create: if request.auth != null &&
+                      recompensaId == request.auth.uid + '_' + request.resource.data.hito &&
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.monto == montoDeHito(request.resource.data.hito) &&
+                      get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('starEggClicks', 0) >= clicksDeHito(request.resource.data.hito);
+
+      allow update, delete: if false;
+    }
+
+    // ===== OX3 — transferencias entre usuarios =====
+    match /transferenciasOx3/{transferId} {
+      allow read: if request.auth != null &&
+                    (resource.data.deUid == request.auth.uid ||
+                     resource.data.paraUid == request.auth.uid ||
+                     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin");
+
+      // Solo quien envía puede crear el registro, con su propio uid como
+      // remitente, a un destinatario distinto que exista de verdad, con un
+      // monto entero positivo. Este documento es lo que la regla de arriba
+      // (usuarios/{userId}) verifica antes de dejar subir el ox3Balance del
+      // destinatario.
+      allow create: if request.auth != null &&
+                      request.resource.data.deUid == request.auth.uid &&
+                      request.resource.data.paraUid != request.auth.uid &&
+                      request.resource.data.monto is int &&
+                      request.resource.data.monto > 0 &&
+                      exists(/databases/$(database)/documents/usuarios/$(request.resource.data.paraUid));
+
+      allow update, delete: if false;
+    }
+
+    // ===== OX3 — historial unificado (recompensas, transferencias, compras, admin) =====
+    match /transaccionesOx3/{id} {
+      allow read: if request.auth != null &&
+                    (resource.data.deUid == request.auth.uid ||
+                     resource.data.paraUid == request.auth.uid ||
+                     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin");
+
+      // deUid siempre es quien está autenticado (incluso para una recompensa
+      // reclamada por uno mismo), salvo que sea el admin ajustando el saldo de
+      // alguien más. Así evitamos el problema que sí tiene canje_tarjeta en
+      // /transacciones (deUid: null nunca pasaría esta regla).
+      allow create: if request.auth != null &&
+                      (request.resource.data.deUid == request.auth.uid ||
+                       get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin");
+
+      allow update, delete: if false;
+    }
+
+    // ===== Proyecto "no-violencia" (proyectos/no-violencia) — comparte este
+    // mismo proyecto de Firebase, colección propia y sin relación con Ox2/Ox3 =====
+    match /noViolenciaPropuestas/{id} {
+      // Cualquier visitante puede enviar una propuesta (formulario público),
+      // siempre que tenga la forma mínima esperada y llegue como "pendiente".
+      allow create: if request.resource.data.nombre is string &&
+                      request.resource.data.nombre.size() > 0 &&
+                      request.resource.data.contacto is string &&
+                      request.resource.data.contacto.size() > 0 &&
+                      request.resource.data.propuesta is string &&
+                      request.resource.data.propuesta.size() > 0 &&
+                      request.resource.data.estado == "pendiente";
+
+      // Solo el admin de OxygeNMedia (mismo rol que ya usas en el sitio
+      // principal) puede leer, actualizar o borrar propuestas.
+      allow read, update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+    }
+
+    // ===== Temas creados por usuarios (muro) =====
+    match /temas/{slug} {
+      // Cualquiera puede leer la lista de temas (para descubrirlos/buscarlos).
+      allow read: if true;
+
+      // Cualquier usuario autenticado puede crear un tema, una sola vez por
+      // slug (el ID del documento ES el nombre normalizado — si ya existe,
+      // el create falla solo, sin que el cliente tenga que comportarse bien).
+      allow create: if request.auth != null &&
+                      request.resource.data.slug == slug &&
+                      request.resource.data.creadorId == request.auth.uid &&
+                      request.resource.data.nombre is string &&
+                      request.resource.data.nombre.size() >= 2 &&
+                      request.resource.data.publicacionesCount == 0;
+
+      // Solo se permite subir publicacionesCount de a 1 (una publicación
+      // nueva a la vez) — nadie más puede tocar nombre/descripcion/creador
+      // después de creado.
+      allow update: if request.auth != null &&
+                      request.resource.data.nombre == resource.data.nombre &&
+                      request.resource.data.descripcion == resource.data.descripcion &&
+                      request.resource.data.creadorId == resource.data.creadorId &&
+                      request.resource.data.publicacionesCount == resource.data.publicacionesCount + 1;
+
+      allow delete: if request.auth != null &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == "admin";
+    }
+  }
+}

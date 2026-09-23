@@ -1,0 +1,56 @@
+// comprar-giftcard.js
+// Vitrina de tarjetas de regalo Ox2. Cada una abre WhatsApp con un mensaje
+// prellenado para coordinar el pago directamente con un administrador.
+
+import { observarSesion, cuentaBloqueada } from "./auth.js";
+
+const NUMERO_WHATSAPP = "529844681306";
+
+const DENOMINACIONES = [
+  { mxn: 20,  creditos: 80,  bono: 4,  imagen: "/giftcard-20mx.png" },
+  { mxn: 40,  creditos: 160, bono: 8, imagen: "/giftcard-50mx.png" },
+  { mxn: 100, creditos: 400, bono: 20, imagen: "/giftcard-100mx.png" },
+  { mxn: 200, creditos: 800, bono: 40, imagen: "/giftcard-200mx.png" }
+];
+
+const gridTarjetas = document.getElementById("gridTarjetas");
+
+// La vitrina requiere sesiÃ³n para saber a nombre de quiÃ©n se coordina la compra,
+// pero no bloquea la vista si aÃºn no estÃ¡ aprobado -- alguien puede querer comprar
+// una gift card como parte de solicitar acceso.
+observarSesion((user, perfil) => {
+  renderTarjetas(perfil?.nombre || null);
+});
+
+function renderTarjetas(nombreUsuario) {
+  gridTarjetas.innerHTML = DENOMINACIONES.map(d => {
+    const total = d.creditos + d.bono;
+    const mensaje = construirMensaje(d, nombreUsuario);
+    const linkWhatsapp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+
+    return `
+      <div class="gc-card">
+        <div class="gc-image-wrap">
+          <img src="${d.imagen}" alt="Tarjeta de regalo $${d.mxn} MXN" onerror="this.classList.add('broken')">
+          <div class="gc-fallback">
+            <span style="font-size:28px;">ðŸŽ</span>
+            <span>Imagen no disponible</span>
+          </div>
+        </div>
+        <div class="gc-body">
+          <div class="gc-price">$${d.mxn} MXN</div>
+          <div class="gc-credits"><b>${d.creditos} Ox2</b> de crédito</div>
+          <div class="gc-bonus">âœ¦ +${d.bono} Ox2 de bono â€” recibes ${total} en total</div>
+          <a href="${linkWhatsapp}" target="_blank" rel="noopener" class="gc-buy-btn">
+            <button style="width:100%;">Comprar por WhatsApp</button>
+          </a>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function construirMensaje(d, nombreUsuario) {
+  const saludo = nombreUsuario ? `Hola, soy ${nombreUsuario}.` : "Hola,";
+  return `${saludo} Quisiera comprar una tarjeta de regalo Ox2 de $${d.mxn} MXN (${d.creditos} + ${d.bono} de bono = ${d.creditos + d.bono} Ox2).`;
+}
