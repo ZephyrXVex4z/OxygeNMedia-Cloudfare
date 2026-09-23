@@ -38,6 +38,11 @@
 // 5. URL_PUBLICA_BASE sigue igual (mismo bucket para ambas apps).
 // 6. Deploy. En NovaStore, admin.html debe mandar el header X-App: novastore
 //    (ver nota al final de este archivo con el snippet de frontend).
+//
+// NOTA SOBRE CORS: cada app tiene una lista "origenesPermitidos" (no un solo
+// string). Mientras pruebas NovaStore desde oxygenmedia.online, ya está
+// incluido ahí junto con novastore.ink. Cuando dejes de necesitar probarlo
+// desde oxygenmedia.online, puedes quitarlo de esa lista.
 // ============================================================================
 
 const URL_PUBLICA_BASE = "https://pub-71d10c040e384f0ebac013dfb1faa046.r2.dev";
@@ -48,7 +53,7 @@ const URL_PUBLICA_BASE = "https://pub-71d10c040e384f0ebac013dfb1faa046.r2.dev";
 // válidos que puede subir.
 const CONFIG_APPS = {
   oxygenmedia: {
-    origenPermitido: "https://oxygenmedia.online",
+    origenesPermitidos: ["https://oxygenmedia.online"],
     maxBytes: 1 * 1024 * 1024, // 1 MB, ya en WebP
     tiposPermitidos: new Set(["perfiles", "posts", "recursos", "banners"]),
     contentTypesPermitidos: new Set(["image/webp"]),
@@ -56,7 +61,7 @@ const CONFIG_APPS = {
     construirRuta: (tipo, uid) => `${tipo}/${uid}/${Date.now()}.webp`,
   },
   novastore: {
-    origenPermitido: "https://novastore.ink",
+    origenesPermitidos: ["https://novastore.ink", "https://oxygenmedia.online"],
     maxBytes: 5 * 1024 * 1024, // 5 MB — fotos de producto, no tan comprimidas como perfiles
     tiposPermitidos: new Set(["productos"]),
     contentTypesPermitidos: new Set(["image/webp", "image/jpeg", "image/png"]),
@@ -142,8 +147,13 @@ export default {
       return jsonError("App desconocida.", 400, { "Access-Control-Allow-Origin": "*" });
     }
 
+    const origenPeticion = request.headers.get("Origin") || "";
+    const origenAUsar = configApp.origenesPermitidos.includes(origenPeticion)
+      ? origenPeticion
+      : configApp.origenesPermitidos[0];
+
     const headersCORS = {
-      "Access-Control-Allow-Origin": configApp.origenPermitido,
+      "Access-Control-Allow-Origin": origenAUsar,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-Firebase-Token, X-Tipo-Imagen, X-App",
     };
