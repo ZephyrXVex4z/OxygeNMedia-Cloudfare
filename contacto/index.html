@@ -1,0 +1,521 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>Contacto - OxygeNMedia</title>  <!-- Tema inline -->  <script>
+    const temas = {
+      oscuro: {
+        fondo: "#0b0b0f",
+        tarjeta: "#15151c",
+        texto: "#f5f5f5",
+        secundario: "#a5a5b0",
+        borde: "#272733",
+        acento: "#7c5cff",
+        acento2: "#9d87ff"
+      },
+
+      claro: {
+        fondo: "#f5f5f7",
+        tarjeta: "#ffffff",
+        texto: "#15151a",
+        secundario: "#666672",
+        borde: "#dddde5",
+        acento: "#6847ff",
+        acento2: "#8368ff"
+      }
+    };
+
+    function aplicarTema(nombre) {
+      const t = temas[nombre] || temas.oscuro;
+
+      document.documentElement.style.setProperty("--fondo", t.fondo);
+      document.documentElement.style.setProperty("--tarjeta", t.tarjeta);
+      document.documentElement.style.setProperty("--texto", t.texto);
+      document.documentElement.style.setProperty("--secundario", t.secundario);
+      document.documentElement.style.setProperty("--borde", t.borde);
+      document.documentElement.style.setProperty("--acento", t.acento);
+      document.documentElement.style.setProperty("--acento2", t.acento2);
+    }
+
+    aplicarTema("oscuro");
+  </script>  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      line-height: 1.6;
+      transition: background .25s, color .25s;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .header {
+      text-align: center;
+      padding: 70px 20px 45px;
+
+      background:
+        radial-gradient(
+          circle at top,
+          rgba(124, 92, 255, .22),
+          transparent 48%
+        ),
+        var(--fondo);
+    }
+
+    .logo {
+      width: 78px;
+      height: 78px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      margin-bottom: 20px;
+
+      border-radius: 22px;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--acento),
+          var(--acento2)
+        );
+
+      color: white;
+      font-size: 30px;
+      font-weight: 900;
+
+      box-shadow:
+        0 15px 40px rgba(124, 92, 255, .25);
+    }
+
+    .header h1 {
+      font-size: clamp(32px, 6vw, 50px);
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      max-width: 650px;
+      margin: auto;
+
+      color: var(--secundario);
+      font-size: 17px;
+    }
+
+    .container {
+      width: min(900px, 92%);
+      margin: auto;
+      padding-bottom: 60px;
+    }
+
+    .back {
+      display: inline-block;
+
+      margin-bottom: 25px;
+      padding: 10px 15px;
+
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+
+      color: var(--texto);
+    }
+
+    .back:hover {
+      border-color: var(--acento);
+    }
+
+    .intro {
+      background: var(--tarjeta);
+      border: 1px solid var(--borde);
+
+      border-radius: 20px;
+
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .intro p {
+      color: var(--secundario);
+    }
+
+    .contact-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(auto-fit, minmax(280px, 1fr));
+
+      gap: 18px;
+    }
+
+    .contact-card {
+      position: relative;
+
+      background: var(--tarjeta);
+      border: 1px solid var(--borde);
+
+      border-radius: 20px;
+
+      padding: 28px;
+
+      transition:
+        transform .2s,
+        border-color .2s,
+        box-shadow .2s;
+    }
+
+    .contact-card:hover {
+      transform: translateY(-3px);
+
+      border-color: var(--acento);
+
+      box-shadow:
+        0 12px 35px rgba(0, 0, 0, .15);
+    }
+
+    .icon {
+      width: 50px;
+      height: 50px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 14px;
+
+      margin-bottom: 18px;
+
+      background: rgba(124, 92, 255, .12);
+
+      font-size: 24px;
+    }
+
+    .contact-card h2 {
+      margin-bottom: 8px;
+      font-size: 22px;
+    }
+
+    .contact-card p {
+      color: var(--secundario);
+      margin-bottom: 18px;
+    }
+
+    .contact-link {
+      display: block;
+
+      padding: 13px 15px;
+
+      border-radius: 12px;
+
+      background: rgba(124, 92, 255, .10);
+
+      border: 1px solid rgba(124, 92, 255, .20);
+
+      color: var(--acento2);
+
+      font-weight: 700;
+
+      word-break: break-word;
+    }
+
+    .contact-link:hover {
+      background: rgba(124, 92, 255, .18);
+      text-decoration: none;
+    }
+
+    .notice {
+      margin-top: 20px;
+
+      padding: 20px;
+
+      border-radius: 16px;
+
+      background: rgba(255, 180, 0, .08);
+
+      border: 1px solid rgba(255, 180, 0, .25);
+    }
+
+    .notice strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .notice p {
+      color: var(--secundario);
+    }
+
+    .topics {
+      margin-top: 25px;
+
+      background: var(--tarjeta);
+      border: 1px solid var(--borde);
+
+      border-radius: 20px;
+
+      padding: 28px;
+    }
+
+    .topics h2 {
+      margin-bottom: 15px;
+    }
+
+    .topics ul {
+      padding-left: 22px;
+      color: var(--secundario);
+    }
+
+    .topics li {
+      margin: 8px 0;
+    }
+
+    .footer {
+      text-align: center;
+
+      padding: 35px 20px;
+
+      border-top: 1px solid var(--borde);
+
+      color: var(--secundario);
+
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: var(--acento2);
+    }
+
+    @media (max-width: 600px) {
+      .header {
+        padding-top: 45px;
+      }
+
+      .contact-card,
+      .intro,
+      .topics {
+        padding: 22px;
+      }
+    }
+  </style></head><body>  <header class="header"><div class="logo">
+  O₂
+</div>
+
+<h1>Información de contacto</h1>
+
+<p>
+  ¿Tienes un problema, encontraste un error o necesitas ayuda
+  con OxygeNMedia? Aquí encontrarás nuestros medios de contacto.
+</p>
+
+  </header>  <main class="container"><a href="/" class="back">
+  ← Volver a OxygeNMedia
+</a>
+
+
+<div class="intro">
+
+  <p>
+    Si tienes algún inconveniente con tu cuenta, detectaste un error
+    en la plataforma, necesitas asistencia o quieres comunicarte
+    directamente con la administración de OxygeNMedia, puedes utilizar
+    cualquiera de los siguientes medios oficiales.
+  </p>
+
+</div>
+
+
+<div class="contact-grid">
+
+
+  <!-- WHATSAPP -->
+
+  <div class="contact-card">
+
+    <div class="icon">
+      💬
+    </div>
+
+    <h2>WhatsApp</h2>
+
+    <p>
+      Ideal para consultas rápidas, problemas con la plataforma
+      o comunicación directa con administración.
+    </p>
+
+    <a
+      class="contact-link"
+      href="https://wa.me/529844681306"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      +52 984 468 1306
+    </a>
+
+  </div>
+
+
+  <!-- CORREO -->
+
+  <div class="contact-card">
+
+    <div class="icon">
+      📧
+    </div>
+
+    <h2>Correo electrónico</h2>
+
+    <p>
+      Recomendado para problemas detallados, reportes,
+      solicitudes administrativas o asuntos que requieran
+      información adicional.
+    </p>
+
+    <a
+      class="contact-link"
+      href="mailto:zephyr.tech.gob@gmail.com"
+    >
+      zephyr.tech.gob@gmail.com
+    </a>
+
+  </div>
+
+
+</div>
+
+
+<!-- QUÉ REPORTAR -->
+
+<div class="topics">
+
+  <h2>🛠️ ¿Qué puedes reportar?</h2>
+
+  <ul>
+
+    <li>
+      Problemas para iniciar sesión o acceder a tu cuenta.
+    </li>
+
+    <li>
+      Errores o funciones que no funcionan correctamente.
+    </li>
+
+    <li>
+      Problemas relacionados con Ox2 o promociones.
+    </li>
+
+    <li>
+      Problemas con publicaciones, perfiles o contenido.
+    </li>
+
+    <li>
+      Reportes de seguridad o comportamiento sospechoso.
+    </li>
+
+    <li>
+      Sugerencias para mejorar OxygeNMedia.
+    </li>
+
+    <li>
+      Solicitudes relacionadas con tu cuenta.
+    </li>
+
+  </ul>
+
+</div>
+
+
+<!-- INFORMACIÓN DEL REPORTE -->
+
+<div class="topics">
+
+  <h2>📋 Para recibir ayuda más rápido</h2>
+
+  <p style="color: var(--secundario); margin-bottom: 15px;">
+    Cuando contactes con soporte, intenta incluir la información
+    necesaria para entender el problema.
+  </p>
+
+  <ul>
+
+    <li>
+      Tu nombre de usuario de OxygeNMedia.
+    </li>
+
+    <li>
+      Una descripción clara del problema.
+    </li>
+
+    <li>
+      Qué estabas intentando hacer cuando ocurrió.
+    </li>
+
+    <li>
+      El mensaje de error, si aparece alguno.
+    </li>
+
+    <li>
+      Capturas de pantalla cuando sean útiles.
+    </li>
+
+  </ul>
+
+</div>
+
+
+<!-- SEGURIDAD -->
+
+<div class="notice">
+
+  <strong>
+    🔐 Importante
+  </strong>
+
+  <p>
+    Nunca envíes tu contraseña, códigos de verificación,
+    códigos de recuperación ni otra información confidencial
+    por WhatsApp o correo electrónico.
+  </p>
+
+  <p style="margin-top: 8px;">
+    El equipo de OxygeNMedia no necesita tu contraseña para
+    solucionar un problema normal de tu cuenta.
+  </p>
+
+</div>
+
+  </main>  <footer class="footer"><p>
+  © 2026 OxygeNMedia. Todos los derechos reservados.
+</p>
+
+<p style="margin-top: 8px;">
+
+  <a href="/guia">
+    Guía de uso
+  </a>
+
+  ·
+
+  <a href="/terminos">
+    Términos y Condiciones
+  </a>
+
+  ·
+
+  <a href="/privacidad">
+    Política de Privacidad
+  </a>
+
+</p>
+
+  </footer></body>
+</html>

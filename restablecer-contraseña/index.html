@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restablecer contraseña — OxygeNMedia</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<script src="/tema-inline.js"></script>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  :root {
+    --bg: #0f1420; --card: #1a2233; --border: #2a3550; --accent: #5b8def;
+    --accent-hover: #4a7ad9; --text: #e8ecf5; --text-dim: #8b96b0;
+    --success: #4caf7d; --danger: #e35d5d;
+    --radius: 14px; --input-bg: #10182a;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px 26px; max-width: 380px; width: 100%;
+  }
+  .icono-app {
+    width: 64px; height: 64px; border-radius: 16px; margin: 0 auto 18px;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    font-family: Georgia, serif; font-weight: 700; font-size: 30px; color: white;
+  }
+  h1 { font-size: 19px; margin: 0 0 6px; text-align: center; }
+  p.subtitulo { font-size: 13.5px; color: var(--text-dim); text-align: center; margin: 0 0 24px; line-height: 1.5; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; margin-top: 16px; }
+  label:first-of-type { margin-top: 0; }
+  input[type="password"] {
+    width: 100%; padding: 11px 13px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--input-bg); color: var(--text); font-size: 14px; font-family: var(--font-body);
+  }
+  button {
+    font-family: var(--font-body); width: 100%; margin-top: 20px;
+    background: var(--accent); color: white; border: none; padding: 12px; border-radius: var(--radius);
+    font-size: 14.5px; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .msg {
+    font-size: 13px; padding: 11px 13px; border-radius: var(--radius); margin-top: 16px; display: none; line-height: 1.5;
+  }
+  .msg.error { background: rgba(227,93,93,0.12); color: var(--danger); display: block; }
+  .msg.ok { background: rgba(76,175,125,0.12); color: var(--success); display: block; }
+  .spinner {
+    width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; margin: 10px auto; animation: girar 0.8s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  a.volver { display: block; text-align: center; margin-top: 18px; font-size: 13px; color: var(--text-dim); text-decoration: none; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="icono-app">Z</div>
+
+  <div id="vistaCargando">
+    <div class="spinner"></div>
+    <p class="subtitulo">Verificando tu enlace...</p>
+  </div>
+
+  <div id="vistaFormulario" class="hidden">
+    <h1>Elige tu nueva contraseña</h1>
+    <p class="subtitulo" id="correoAsociado"></p>
+
+    <label for="inputNuevaPassword">Nueva contraseña</label>
+    <input type="password" id="inputNuevaPassword" placeholder="••••••••">
+
+    <label for="inputConfirmarPassword">Confirmar contraseña</label>
+    <input type="password" id="inputConfirmarPassword" placeholder="••••••••">
+
+    <div class="msg" id="msgFormulario"></div>
+
+    <button id="btnConfirmar">Cambiar contraseña</button>
+  </div>
+
+  <div id="vistaError" class="hidden">
+    <h1 style="color:var(--danger);">Enlace inválido</h1>
+    <p class="subtitulo" id="textoError"></p>
+    <a href="/" class="volver">← Volver a OxygeNMedia</a>
+  </div>
+
+  <div id="vistaExito" class="hidden">
+    <h1 style="color:var(--success);">¡Listo!</h1>
+    <p class="subtitulo">Tu contraseña se cambió correctamente. Ya puedes iniciar sesión con ella.</p>
+    <a href="/"><button style="margin-top:8px;">Ir a iniciar sesión</button></a>
+  </div>
+</div>
+
+<script type="module">
+import {
+  verifyPasswordResetCode, confirmPasswordReset
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import { auth } from "/firebase-config.js";
+
+const vistaCargando = document.getElementById("vistaCargando");
+const vistaFormulario = document.getElementById("vistaFormulario");
+const vistaError = document.getElementById("vistaError");
+const vistaExito = document.getElementById("vistaExito");
+const correoAsociado = document.getElementById("correoAsociado");
+const textoError = document.getElementById("textoError");
+const msgFormulario = document.getElementById("msgFormulario");
+const btnConfirmar = document.getElementById("btnConfirmar");
+
+function mostrarSolo(vista) {
+  [vistaCargando, vistaFormulario, vistaError, vistaExito].forEach(v => v.classList.add("hidden"));
+  vista.classList.remove("hidden");
+}
+
+// Firebase manda el link con un parámetro "oobCode" (el código de un solo uso que
+// autoriza este cambio de contraseña específico) y "mode=resetPassword".
+const params = new URLSearchParams(location.search);
+const oobCode = params.get("oobCode");
+const mode = params.get("mode");
+
+if (!oobCode || mode !== "resetPassword") {
+  textoError.textContent = "Este enlace no es válido o le falta información. Pide un nuevo correo de restablecimiento desde la pantalla de inicio de sesión.";
+  mostrarSolo(vistaError);
+} else {
+  // Antes de mostrar el formulario, verificamos con Firebase que el código
+  // todavía sea válido (no haya expirado ni se haya usado ya) — si no lo
+  // hiciéramos, el usuario llenaría el formulario para nada y solo se
+  // enteraría del error hasta el final.
+  verifyPasswordResetCode(auth, oobCode)
+    .then((correo) => {
+      correoAsociado.textContent = `Para la cuenta: ${correo}`;
+      mostrarSolo(vistaFormulario);
+    })
+    .catch((err) => {
+      textoError.textContent = "Este enlace ya expiró o ya fue usado. Pide uno nuevo desde la pantalla de inicio de sesión.";
+      mostrarSolo(vistaError);
+    });
+}
+
+btnConfirmar.addEventListener("click", async () => {
+  msgFormulario.style.display = "none";
+  const nueva = document.getElementById("inputNuevaPassword").value;
+  const confirmar = document.getElementById("inputConfirmarPassword").value;
+
+  if (!nueva || nueva.length < 6) {
+    msgFormulario.textContent = "La contraseña debe tener al menos 6 caracteres.";
+    msgFormulario.className = "msg error";
+    return;
+  }
+  if (nueva !== confirmar) {
+    msgFormulario.textContent = "Las contraseñas no coinciden.";
+    msgFormulario.className = "msg error";
+    return;
+  }
+
+  btnConfirmar.disabled = true;
+  btnConfirmar.textContent = "Cambiando...";
+  try {
+    await confirmPasswordReset(auth, oobCode, nueva);
+    mostrarSolo(vistaExito);
+  } catch (err) {
+    msgFormulario.textContent = "No se pudo cambiar la contraseña. El enlace puede haber expirado — pide uno nuevo.";
+    msgFormulario.className = "msg error";
+    btnConfirmar.disabled = false;
+    btnConfirmar.textContent = "Cambiar contraseña";
+  }
+});
+</script>
+
+</body>
+</html>

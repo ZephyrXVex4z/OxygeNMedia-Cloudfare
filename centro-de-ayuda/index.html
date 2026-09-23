@@ -1,0 +1,1048 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>Centro de Ayuda - OxygeNMedia</title>  <!-- =========================================
+       TEMA INLINE
+       ========================================= -->  <script>
+    const temas = {
+      oscuro: {
+        fondo: "#0b0b0f",
+        tarjeta: "#15151c",
+        tarjeta2: "#111117",
+        texto: "#f5f5f5",
+        secundario: "#a5a5b0",
+        borde: "#272733",
+        acento: "#7c5cff",
+        acento2: "#9d87ff",
+        sombra: "rgba(0,0,0,.35)"
+      },
+
+      claro: {
+        fondo: "#f5f5f7",
+        tarjeta: "#ffffff",
+        tarjeta2: "#eeeeF3",
+        texto: "#15151a",
+        secundario: "#666672",
+        borde: "#ddddE5",
+        acento: "#6847ff",
+        acento2: "#8368ff",
+        sombra: "rgba(0,0,0,.12)"
+      }
+    };
+
+    function aplicarTema(nombre) {
+      const t = temas[nombre] || temas.oscuro;
+
+      document.documentElement.style.setProperty("--fondo", t.fondo);
+      document.documentElement.style.setProperty("--tarjeta", t.tarjeta);
+      document.documentElement.style.setProperty("--tarjeta2", t.tarjeta2);
+      document.documentElement.style.setProperty("--texto", t.texto);
+      document.documentElement.style.setProperty("--secundario", t.secundario);
+      document.documentElement.style.setProperty("--borde", t.borde);
+      document.documentElement.style.setProperty("--acento", t.acento);
+      document.documentElement.style.setProperty("--acento2", t.acento2);
+      document.documentElement.style.setProperty("--sombra", t.sombra);
+    }
+
+    aplicarTema("oscuro");
+  </script>  <!-- =========================================
+       ESTILOS
+       ========================================= -->  <style>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      line-height: 1.6;
+
+      transition:
+        background .25s,
+        color .25s;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+
+    /* =========================================
+       HEADER
+       ========================================= */
+
+    header {
+      position: relative;
+
+      padding:
+        65px
+        20px
+        55px;
+
+      text-align: center;
+
+      background:
+        radial-gradient(
+          circle at top,
+          rgba(124,92,255,.24),
+          transparent 50%
+        ),
+        var(--fondo);
+    }
+
+    .logo {
+      width: 78px;
+      height: 78px;
+
+      margin: 0 auto 20px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 23px;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--acento),
+          var(--acento2)
+        );
+
+      color: white;
+
+      font-size: 30px;
+      font-weight: 900;
+
+      box-shadow:
+        0 15px 45px
+        rgba(124,92,255,.28);
+    }
+
+    header h1 {
+      font-size: clamp(34px, 7vw, 56px);
+      margin-bottom: 10px;
+    }
+
+    header p {
+      max-width: 680px;
+
+      margin: auto;
+
+      color: var(--secundario);
+
+      font-size: 17px;
+    }
+
+
+    /* =========================================
+       CONTENEDOR
+       ========================================= */
+
+    .container {
+      width: min(1050px, 92%);
+      margin: auto;
+
+      padding-bottom: 65px;
+    }
+
+
+    /* =========================================
+       BOTÓN VOLVER
+       ========================================= */
+
+    .back {
+      display: inline-block;
+
+      margin-bottom: 25px;
+
+      padding:
+        10px
+        15px;
+
+      border:
+        1px solid
+        var(--borde);
+
+      border-radius: 11px;
+
+      color: var(--texto);
+
+      transition: .2s;
+    }
+
+    .back:hover {
+      border-color: var(--acento);
+      transform: translateY(-2px);
+    }
+
+
+    /* =========================================
+       BUSCADOR VISUAL
+       ========================================= */
+
+    .search-box {
+      margin-bottom: 28px;
+
+      padding: 25px;
+
+      border:
+        1px solid
+        var(--borde);
+
+      border-radius: 20px;
+
+      background: var(--tarjeta);
+    }
+
+    .search-box h2 {
+      margin-bottom: 12px;
+    }
+
+    .search {
+      width: 100%;
+
+      padding:
+        15px
+        17px;
+
+      border:
+        1px solid
+        var(--borde);
+
+      border-radius: 13px;
+
+      outline: none;
+
+      background: var(--tarjeta2);
+
+      color: var(--texto);
+
+      transition: .2s;
+    }
+
+    .search:focus {
+      border-color: var(--acento);
+
+      box-shadow:
+        0 0 0 3px
+        rgba(124,92,255,.12);
+    }
+
+
+    /* =========================================
+       GRID
+       ========================================= */
+
+    .help-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          auto-fit,
+          minmax(260px, 1fr)
+        );
+
+      gap: 18px;
+    }
+
+
+    /* =========================================
+       TARJETAS
+       ========================================= */
+
+    .help-card {
+      position: relative;
+
+      display: block;
+
+      padding: 27px;
+
+      background: var(--tarjeta);
+
+      border:
+        1px solid
+        var(--borde);
+
+      border-radius: 20px;
+
+      overflow: hidden;
+
+      transition:
+        transform .2s,
+        border-color .2s,
+        box-shadow .2s;
+    }
+
+    .help-card::before {
+      content: "";
+
+      position: absolute;
+
+      top: 0;
+      left: 0;
+
+      width: 100%;
+      height: 3px;
+
+      background:
+        linear-gradient(
+          90deg,
+          var(--acento),
+          var(--acento2)
+        );
+
+      opacity: .7;
+    }
+
+    .help-card:hover {
+      transform: translateY(-4px);
+
+      border-color:
+        var(--acento);
+
+      box-shadow:
+        0 15px 40px
+        var(--sombra);
+    }
+
+    .icon {
+      width: 52px;
+      height: 52px;
+
+      margin-bottom: 17px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 15px;
+
+      background:
+        rgba(124,92,255,.12);
+
+      font-size: 25px;
+    }
+
+    .help-card h2 {
+      font-size: 21px;
+      margin-bottom: 7px;
+    }
+
+    .help-card p {
+      color: var(--secundario);
+
+      font-size: 14px;
+
+      margin-bottom: 16px;
+    }
+
+    .open {
+      color: var(--acento2);
+
+      font-weight: 700;
+
+      font-size: 14px;
+    }
+
+
+    /* =========================================
+       SECCIÓN DESTACADA
+       ========================================= */
+
+    .featured {
+      margin-top: 22px;
+
+      padding: 27px;
+
+      border-radius: 20px;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(124,92,255,.16),
+          rgba(157,135,255,.05)
+        );
+
+      border:
+        1px solid
+        rgba(124,92,255,.3);
+    }
+
+    .featured h2 {
+      margin-bottom: 8px;
+    }
+
+    .featured p {
+      color: var(--secundario);
+    }
+
+    .featured a {
+      display: inline-block;
+
+      margin-top: 17px;
+
+      padding:
+        11px
+        17px;
+
+      border-radius: 11px;
+
+      background: var(--acento);
+
+      color: white;
+
+      font-weight: 700;
+
+      transition: .2s;
+    }
+
+    .featured a:hover {
+      background: var(--acento2);
+      transform: translateY(-2px);
+    }
+
+
+    /* =========================================
+       FAQ
+       ========================================= */
+
+    .faq {
+      margin-top: 25px;
+
+      padding: 27px;
+
+      background: var(--tarjeta);
+
+      border:
+        1px solid
+        var(--borde);
+
+      border-radius: 20px;
+    }
+
+    .faq h2 {
+      margin-bottom: 18px;
+    }
+
+    details {
+      padding:
+        15px
+        0;
+
+      border-bottom:
+        1px solid
+        var(--borde);
+    }
+
+    details:last-child {
+      border-bottom: none;
+    }
+
+    summary {
+      cursor: pointer;
+
+      font-weight: 700;
+
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      content: "+";
+
+      float: right;
+
+      color: var(--acento2);
+
+      font-size: 20px;
+    }
+
+    details[open] summary::after {
+      content: "−";
+    }
+
+    details p {
+      margin-top: 10px;
+
+      color: var(--secundario);
+    }
+
+
+    /* =========================================
+       SEGURIDAD
+       ========================================= */
+
+    .security {
+      margin-top: 25px;
+
+      padding: 25px;
+
+      border-radius: 18px;
+
+      background:
+        rgba(255,180,0,.07);
+
+      border:
+        1px solid
+        rgba(255,180,0,.23);
+    }
+
+    .security h2 {
+      margin-bottom: 8px;
+    }
+
+    .security p {
+      color: var(--secundario);
+    }
+
+
+    /* =========================================
+       FOOTER
+       ========================================= */
+
+    footer {
+      text-align: center;
+
+      padding:
+        35px
+        20px;
+
+      border-top:
+        1px solid
+        var(--borde);
+
+      color: var(--secundario);
+
+      font-size: 14px;
+    }
+
+    footer a {
+      color: var(--acento2);
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+
+    /* =========================================
+       ACCESIBILIDAD
+       ========================================= */
+
+    .skip-link {
+      position: absolute;
+
+      left: -9999px;
+      top: 10px;
+
+      padding:
+        10px
+        15px;
+
+      background: var(--acento);
+      color: white;
+
+      border-radius: 8px;
+
+      z-index: 9999;
+    }
+
+    .skip-link:focus {
+      left: 10px;
+    }
+
+
+    /* =========================================
+       MÓVIL
+       ========================================= */
+
+    @media (max-width: 600px) {
+
+      header {
+        padding-top: 45px;
+      }
+
+      .help-card,
+      .search-box,
+      .featured,
+      .faq,
+      .security {
+        padding: 22px;
+      }
+
+    }
+
+  </style></head><body><a
+href="#contenido"
+class="skip-link"
+
+«»
+
+Ir al contenido principal
+
+  </a>  <!-- =========================================
+       HEADER
+       ========================================= -->  <header><div class="logo">
+  O₂
+</div>
+
+<h1>
+  Centro de Ayuda
+</h1>
+
+<p>
+  Encuentra rápidamente información sobre OxygeNMedia,
+  tu cuenta, Ox2, privacidad, términos y soporte.
+</p>
+
+  </header>  <!-- =========================================
+       CONTENIDO
+       ========================================= -->  <main
+    id="contenido"
+    class="container"
+  ><a
+  href="/"
+  class="back"
+>
+  ← Volver a OxygeNMedia
+</a>
+
+
+<!-- =========================================
+     BUSCADOR
+     ========================================= -->
+
+<section
+  class="search-box"
+  aria-labelledby="buscar-titulo"
+>
+
+  <h2 id="buscar-titulo">
+    🔎 ¿Qué estás buscando?
+  </h2>
+
+  <input
+    type="search"
+    id="buscador"
+    class="search"
+    placeholder="Busca una sección..."
+    aria-label="Buscar en el centro de ayuda"
+  >
+
+</section>
+
+
+<!-- =========================================
+     TARJETAS PRINCIPALES
+     ========================================= -->
+
+<nav
+  aria-label="Secciones del Centro de Ayuda"
+>
+
+  <div
+    class="help-grid"
+    id="helpGrid"
+  >
+
+
+    <!-- GUÍA -->
+
+    <a
+      href="/guia"
+      class="help-card"
+      data-search="guia uso como funciona ox2 perfil publicaciones musica"
+    >
+
+      <div class="icon">
+        📖
+      </div>
+
+      <h2>
+        Guía de uso
+      </h2>
+
+      <p>
+        Aprende a utilizar OxygeNMedia, configurar tu perfil,
+        publicar contenido y consultar información sobre Ox2.
+      </p>
+
+      <span class="open">
+        Ver guía →
+      </span>
+
+    </a>
+
+
+    <!-- CONTACTO -->
+
+    <a
+      href="/contacto"
+      class="help-card"
+      data-search="contacto soporte ayuda whatsapp correo administrador dueño"
+    >
+
+      <div class="icon">
+        💬
+      </div>
+
+      <h2>
+        Contacto y soporte
+      </h2>
+
+      <p>
+        Comunícate con el equipo de OxygeNMedia si tienes
+        problemas, dudas o necesitas asistencia.
+      </p>
+
+      <span class="open">
+        Contactar soporte →
+      </span>
+
+    </a>
+
+
+    <!-- INFORMACIÓN -->
+
+    <a
+      href="/info"
+      class="help-card"
+      data-search="informacion oxygendmedia proyecto plataforma caracteristicas"
+    >
+
+      <div class="icon">
+        ℹ️
+      </div>
+
+      <h2>
+        Información de OxygeNMedia
+      </h2>
+
+      <p>
+        Conoce qué es OxygeNMedia, sus funciones,
+        características y propósito.
+      </p>
+
+      <span class="open">
+        Ver información →
+      </span>
+
+    </a>
+
+
+    <!-- TÉRMINOS -->
+
+    <a
+      href="/terminos"
+      class="help-card"
+      data-search="terminos condiciones reglas normas uso legal"
+    >
+
+      <div class="icon">
+        📜
+      </div>
+
+      <h2>
+        Términos y Condiciones
+      </h2>
+
+      <p>
+        Consulta las reglas, condiciones de uso y
+        responsabilidades relacionadas con la plataforma.
+      </p>
+
+      <span class="open">
+        Leer términos →
+      </span>
+
+    </a>
+
+
+    <!-- PRIVACIDAD -->
+
+    <a
+      href="/privacidad"
+      class="help-card"
+      data-search="privacidad datos personales informacion seguridad datos"
+    >
+
+      <div class="icon">
+        🔒
+      </div>
+
+      <h2>
+        Política de Privacidad
+      </h2>
+
+      <p>
+        Consulta cómo se trata y protege la información
+        relacionada con tu uso de OxygeNMedia.
+      </p>
+
+      <span class="open">
+        Leer política →
+      </span>
+
+    </a>
+
+
+  </div>
+
+</nav>
+
+
+<!-- =========================================
+     DESTACADO
+     ========================================= -->
+
+<section class="featured">
+
+  <h2>
+    💎 ¿Tienes dudas sobre Ox2?
+  </h2>
+
+  <p>
+    Consulta la guía de uso para conocer qué es Ox2,
+    dónde consultar tu saldo y cómo funcionan las
+    promociones disponibles.
+  </p>
+
+  <a href="/guia">
+    Consultar guía de Ox2
+  </a>
+
+</section>
+
+
+<!-- =========================================
+     FAQ
+     ========================================= -->
+
+<section
+  class="faq"
+  aria-labelledby="faq-title"
+>
+
+  <h2 id="faq-title">
+    ❓ Preguntas frecuentes
+  </h2>
+
+
+  <details>
+
+    <summary>
+      ¿Dónde puedo conseguir ayuda con mi cuenta?
+    </summary>
+
+    <p>
+      Visita la sección de Contacto y Soporte para encontrar
+      los medios oficiales de comunicación con el equipo
+      de OxygeNMedia.
+    </p>
+
+  </details>
+
+
+  <details>
+
+    <summary>
+      ¿Dónde puedo consultar información sobre Ox2?
+    </summary>
+
+    <p>
+      La información disponible sobre Ox2 se encuentra
+      en la Guía de Uso de OxygeNMedia.
+    </p>
+
+  </details>
+
+
+  <details>
+
+    <summary>
+      ¿Dónde puedo consultar las reglas de OxygeNMedia?
+    </summary>
+
+    <p>
+      Puedes consultar todas las condiciones aplicables
+      en la página de Términos y Condiciones.
+    </p>
+
+  </details>
+
+
+  <details>
+
+    <summary>
+      ¿Dónde puedo consultar información sobre privacidad?
+    </summary>
+
+    <p>
+      La Política de Privacidad contiene la información
+      relacionada con privacidad y tratamiento de datos.
+    </p>
+
+  </details>
+
+
+  <details>
+
+    <summary>
+      ¿Dónde puedo conocer mejor OxygeNMedia?
+    </summary>
+
+    <p>
+      Visita la página de Información de OxygeNMedia
+      para conocer el proyecto y sus principales características.
+    </p>
+
+  </details>
+
+
+  <details>
+
+    <summary>
+      ¿Qué hago si encuentro un error?
+    </summary>
+
+    <p>
+      Contacta con soporte e indica tu nombre de usuario,
+      qué estabas intentando hacer, qué ocurrió y cualquier
+      mensaje de error que haya aparecido.
+    </p>
+
+  </details>
+
+
+</section>
+
+
+<!-- =========================================
+     SEGURIDAD
+     ========================================= -->
+
+<section class="security">
+
+  <h2>
+    🛡️ Seguridad
+  </h2>
+
+  <p>
+    Nunca compartas tu contraseña, códigos de verificación
+    o códigos de recuperación con otras personas.
+    El equipo de soporte no necesita tu contraseña para
+    solucionar un problema normal de tu cuenta.
+  </p>
+
+</section>
+
+  </main>  <!-- =========================================
+       FOOTER
+       ========================================= -->  <footer><p>
+  © 2026 OxygeNMedia. Todos los derechos reservados.
+</p>
+
+<p style="margin-top: 9px;">
+
+  <a href="/guia">
+    Guía de uso
+  </a>
+
+  ·
+
+  <a href="/contacto">
+    Contacto
+  </a>
+
+  ·
+
+  <a href="/info">
+    Información
+  </a>
+
+  ·
+
+  <a href="/terminos">
+    Términos
+  </a>
+
+  ·
+
+  <a href="/privacidad">
+    Privacidad
+  </a>
+
+</p>
+
+  </footer>  <!-- =========================================
+       BUSCADOR
+       ========================================= -->  <script>
+
+    const buscador =
+      document.getElementById("buscador");
+
+    const tarjetas =
+      document.querySelectorAll(".help-card");
+
+
+    buscador.addEventListener(
+      "input",
+      function () {
+
+        const texto =
+          this.value
+            .toLowerCase()
+            .trim();
+
+
+        tarjetas.forEach(
+          tarjeta => {
+
+            const contenido =
+              (
+                tarjeta.innerText +
+                " " +
+                tarjeta.dataset.search
+              ).toLowerCase();
+
+
+            if (
+              contenido.includes(texto)
+            ) {
+
+              tarjeta.style.display =
+                "block";
+
+            } else {
+
+              tarjeta.style.display =
+                "none";
+
+            }
+
+          }
+        );
+
+      }
+    );
+
+  </script></body>
+</html>

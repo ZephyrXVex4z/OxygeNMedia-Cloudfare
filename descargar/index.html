@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Descargar app — OxygeNMedia</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<script src="/tema-inline.js"></script>
+<script src="/fuente-inline.js"></script>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  :root {
+    --bg: #0f1420; --card: #1a2233; --border: #2a3550; --accent: #5b8def;
+    --accent-hover: #4a7ad9; --text: #e8ecf5; --text-dim: #8b96b0;
+    --success: #4caf7d; --danger: #e35d5d; --warn: #e0a941;
+    --radius: 14px; --card-shadow: none; --input-bg: #10182a;
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-weight-heading: 700;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: var(--font-weight-heading); }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 5;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  button {
+    font-family: var(--font-body);
+    background: var(--accent); color: white; border: none; padding: 10px 16px;
+    border-radius: var(--radius); font-size: 14px; cursor: pointer; font-weight: 600;
+  }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  .container { max-width: 520px; margin: 0 auto; padding: 32px 20px 80px; text-align: center; }
+
+  .icono-app {
+    width: 96px; height: 96px; border-radius: 22px; margin: 0 auto 20px;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    font-family: Georgia, serif; font-weight: 700; font-size: 46px; color: var(--text);
+  }
+
+  h2 { font-size: 22px; margin: 0 0 8px; }
+  .subtitulo { color: var(--text-dim); font-size: 14.5px; margin: 0 0 28px; line-height: 1.5; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; text-align: left; margin-bottom: 16px; }
+  .card h3 { font-size: 15px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  .card p { font-size: 13.5px; color: var(--text-dim); line-height: 1.6; margin: 0 0 10px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card ol { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--text-dim); line-height: 1.7; }
+
+  .btn-descargar {
+    display: block; width: 100%; padding: 16px; font-size: 16px; margin-bottom: 24px;
+  }
+
+  .nota {
+    font-size: 12.5px; color: var(--text-dim); background: rgba(224,169,65,0.1);
+    border: 1px solid rgba(224,169,65,0.3); border-radius: var(--radius);
+    padding: 12px 14px; line-height: 1.55; text-align: left; margin-top: 20px;
+  }
+  .nota strong { color: var(--warn); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📲 Descargar app</h1>
+  <a href="/muro"><button class="secondary">Volver</button></a>
+</header>
+
+<div class="container">
+
+  <div class="icono-app">Z</div>
+  <h2>OxygeNMedia para Android</h2>
+  <p class="subtitulo">Instala la app en tu celular para acceder más rápido, sin necesidad de abrir el navegador cada vez.</p>
+
+  <a href="/OxygeNMedia.apk" download style="text-decoration:none;">
+    <button class="btn-descargar">⬇ Descargar APK</button>
+  </a>
+
+  <div class="card">
+    <h3>📋 Cómo instalarla</h3>
+    <ol>
+      <li>Descarga el archivo tocando el botón de arriba</li>
+      <li>Ábrelo desde tus descargas</li>
+      <li>Si tu celular te pide permiso para instalar de "fuentes desconocidas", actívalo solo para este archivo</li>
+      <li>Toca <strong>Instalar</strong></li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>🔒 ¿Es seguro?</h3>
+    <p>Sí — es exactamente el mismo sitio web de OxygeNMedia empaquetado como app, no un programa distinto. No pide más permisos de los que ya usa la versión web (como notificaciones, si las activas).</p>
+  </div>
+
+  <div class="nota">
+    <strong>Nota:</strong> esta app no está en la Google Play Store todavía, así que Android puede advertirte que viene de "fuera de la tienda" — es normal y no significa que sea insegura.
+  </div>
+
+</div>
+
+</body>
+</html>

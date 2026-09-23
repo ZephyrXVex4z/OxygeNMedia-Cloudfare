@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guía de uso - OxygeNMedia</title>
+
+  <!-- Tema inline -->
+  <script>
+    const temas = {
+      oscuro: {
+        fondo: "#0b0b0f",
+        tarjeta: "#15151c",
+        texto: "#f5f5f5",
+        secundario: "#a5a5b0",
+        borde: "#272733",
+        acento: "#7c5cff",
+        acento2: "#9d87ff"
+      },
+      claro: {
+        fondo: "#f5f5f7",
+        tarjeta: "#ffffff",
+        texto: "#15151a",
+        secundario: "#666672",
+        borde: "#ddddE5",
+        acento: "#6847ff",
+        acento2: "#8368ff"
+      }
+    };
+
+    function aplicarTema(nombre) {
+      const t = temas[nombre] || temas.oscuro;
+      document.documentElement.style.setProperty("--fondo", t.fondo);
+      document.documentElement.style.setProperty("--tarjeta", t.tarjeta);
+      document.documentElement.style.setProperty("--texto", t.texto);
+      document.documentElement.style.setProperty("--secundario", t.secundario);
+      document.documentElement.style.setProperty("--borde", t.borde);
+      document.documentElement.style.setProperty("--acento", t.acento);
+      document.documentElement.style.setProperty("--acento2", t.acento2);
+    }
+
+    aplicarTema("oscuro");
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      line-height: 1.6;
+      transition: 0.25s;
+    }
+
+    a {
+      color: var(--acento2);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .header {
+      padding: 70px 20px 50px;
+      text-align: center;
+      background:
+        radial-gradient(circle at top, rgba(124,92,255,.22), transparent 45%),
+        var(--fondo);
+    }
+
+    .logo {
+      width: 78px;
+      height: 78px;
+      border-radius: 22px;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--acento), var(--acento2));
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      font-weight: 900;
+      color: white;
+      box-shadow: 0 15px 40px rgba(124,92,255,.25);
+    }
+
+    .header h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: var(--secundario);
+      max-width: 650px;
+      margin: auto;
+      font-size: 17px;
+    }
+
+    .container {
+      width: min(1000px, 92%);
+      margin: auto;
+      padding-bottom: 60px;
+    }
+
+    .toc {
+      background: var(--tarjeta);
+      border: 1px solid var(--borde);
+      border-radius: 18px;
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    .toc h2 {
+      margin-bottom: 15px;
+    }
+
+    .toc a {
+      display: block;
+      padding: 8px 0;
+      color: var(--secundario);
+    }
+
+    .toc a:hover {
+      color: var(--acento2);
+    }
+
+    section {
+      background: var(--tarjeta);
+      border: 1px solid var(--borde);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 22px;
+    }
+
+    section h2 {
+      font-size: 25px;
+      margin-bottom: 14px;
+    }
+
+    section h3 {
+      margin-top: 24px;
+      margin-bottom: 8px;
+      color: var(--acento2);
+    }
+
+    section p {
+      color: var(--secundario);
+      margin-bottom: 12px;
+    }
+
+    ul, ol {
+      padding-left: 22px;
+      color: var(--secundario);
+    }
+
+    li {
+      margin: 8px 0;
+    }
+
+    .tip {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(124,92,255,.10);
+      border: 1px solid rgba(124,92,255,.25);
+      color: var(--texto);
+    }
+
+    .warning {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(255,180,0,.08);
+      border: 1px solid rgba(255,180,0,.25);
+      color: var(--texto);
+    }
+
+    .ox2 {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #7c5cff, #b19cff);
+      color: white;
+      font-weight: 800;
+      font-size: .9em;
+    }
+
+    .step {
+      display: flex;
+      gap: 15px;
+      margin: 16px 0;
+      align-items: flex-start;
+    }
+
+    .number {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--acento);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .mini-card {
+      padding: 20px;
+      border: 1px solid var(--borde);
+      border-radius: 15px;
+      background: rgba(255,255,255,.015);
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .mini-card span {
+      color: var(--secundario);
+      font-size: 14px;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 35px 20px;
+      border-top: 1px solid var(--borde);
+      color: var(--secundario);
+      font-size: 14px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 25px;
+      padding: 10px 15px;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      color: var(--texto);
+    }
+
+    @media (max-width: 600px) {
+      section {
+        padding: 22px;
+      }
+
+      .header {
+        padding-top: 45px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header">
+    <div class="logo">O₂</div>
+
+    <h1>Guía de OxygeNMedia</h1>
+
+    <p>
+      Todo lo que necesitas para entender y aprovechar OxygeNMedia:
+      publicaciones, perfiles, música, privacidad y Ox2.
+    </p>
+  </header>
+
+  <main class="container">
+
+    <a href="/" class="back">← Volver a OxygeNMedia</a>
+
+    <!-- ÍNDICE -->
+    <div class="toc">
+      <h2>📚 Contenido</h2>
+
+      <a href="#inicio">1. Primeros pasos</a>
+      <a href="#perfil">2. Tu perfil</a>
+      <a href="#ox2">3. ¿Qué es Ox2?</a>
+      <a href="#conseguir-ox2">4. Cómo conseguir Ox2</a>
+      <a href="#publicaciones">5. Publicaciones</a>
+      <a href="#musica">6. Música y Spotify</a>
+      <a href="#privacidad">7. Privacidad</a>
+      <a href="#cuenta">8. Información de tu cuenta</a>
+      <a href="#seguridad">9. Seguridad</a>
+      <a href="#problemas">10. Problemas frecuentes</a>
+    </div>
+
+
+    <!-- PRIMEROS PASOS -->
+    <section id="inicio">
+      <h2>🚀 1. Primeros pasos</h2>
+
+      <p>
+        OxygeNMedia es una plataforma social donde puedes crear tu perfil,
+        compartir contenido y personalizar tu experiencia.
+      </p>
+
+      <h3>Crear una cuenta</h3>
+
+      <div class="step">
+        <div class="number">1</div>
+        <p>Entra en OxygeNMedia y selecciona la opción para registrarte.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">2</div>
+        <p>Introduce los datos solicitados para crear tu cuenta.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">3</div>
+        <p>Verifica tu cuenta si el sistema te solicita hacerlo.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">4</div>
+        <p>Completa tu perfil y empieza a utilizar OxygeNMedia.</p>
+      </div>
+
+      <div class="tip">
+        💡 <strong>Consejo:</strong> utiliza un correo electrónico al que
+        tengas acceso. Algunas funciones relacionadas con tu cuenta pueden
+        depender de él.
+      </div>
+    </section>
+
+
+    <!-- PERFIL -->
+    <section id="perfil">
+      <h2>👤 2. Tu perfil</h2>
+
+      <p>
+        Tu perfil es el espacio donde otros usuarios pueden conocer tu
+        identidad dentro de OxygeNMedia.
+      </p>
+
+      <h3>Información del perfil</h3>
+
+      <div class="card-grid">
+        <div class="mini-card">
+          <strong>🖼️ Foto de perfil</strong>
+          <span>Personaliza la imagen que identifica tu cuenta.</span>
+        </div>
+
+        <div class="mini-card">
+          <strong>📝 Biografía</strong>
+          <span>Añade una descripción sobre ti.</span>
+        </div>
+
+        <div class="mini-card">
+          <strong>🎵 Música</strong>
+          <span>Comparte tus gustos o música del momento.</span>
+        </div>
+
+        <div class="mini-card">
+          <strong>🎨 Personalización</strong>
+          <span>Configura elementos visuales disponibles para tu perfil.</span>
+        </div>
+      </div>
+
+      <h3>¿Cómo encontrar información de otro usuario?</h3>
+
+      <ol>
+        <li>Utiliza el buscador de OxygeNMedia.</li>
+        <li>Escribe el nombre de usuario.</li>
+        <li>Selecciona el perfil correspondiente.</li>
+        <li>Consulta únicamente la información que el usuario haya decidido hacer pública.</li>
+      </ol>
+
+      <div class="warning">
+        🔒 Si determinada información no aparece en un perfil, puede deberse
+        a que el usuario decidió mantenerla privada.
+      </div>
+    </section>
+
+
+    <!-- OX2 -->
+    <section id="ox2">
+      <h2>💎 3. ¿Qué es <span class="ox2">Ox2</span>?</h2>
+
+      <p>
+        <span class="ox2">Ox2</span> es una unidad utilizada dentro de
+        OxygeNMedia para determinadas funciones o recompensas de la plataforma.
+      </p>
+
+      <h3>¿Dónde puedo consultar mi Ox2?</h3>
+
+      <ol>
+        <li>Abre tu perfil o panel de cuenta.</li>
+        <li>Busca el apartado relacionado con tu saldo o recompensas.</li>
+        <li>Ahí podrás consultar la cantidad de <span class="ox2">Ox2</span> disponible.</li>
+      </ol>
+
+      <div class="tip">
+        💡 Tu saldo puede cambiar cuando recibas recompensas o utilices
+        funciones que consuman Ox2.
+      </div>
+    </section>
+
+
+    <!-- CONSEGUIR OX2 -->
+    <section id="conseguir-ox2">
+      <h2>🔥 4. Cómo conseguir Ox2</h2>
+
+      <p>
+        Dependiendo de las promociones disponibles, existen diferentes
+        formas de conseguir <span class="ox2">Ox2</span>.
+      </p>
+
+      <h3>🎁 Promociones</h3>
+
+      <p>
+        OxygeNMedia puede ofrecer promociones especiales que otorguen Ox2
+        a determinados usuarios.
+      </p>
+
+      <h3>🔗 Enlaces promocionales</h3>
+
+      <p>
+        Algunas campañas pueden proporcionar Ox2 después de completar
+        determinadas acciones mediante un enlace oficial.
+      </p>
+
+      <div class="step">
+        <div class="number">1</div>
+        <p>Accede al enlace de la promoción.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">2</div>
+        <p>Completa los requisitos indicados en la campaña.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">3</div>
+        <p>Regístrate o inicia sesión si es necesario.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">4</div>
+        <p>La recompensa se añadirá a tu cuenta cuando se cumplan las condiciones.</p>
+      </div>
+
+      <div class="warning">
+        ⚠️ Desconfía de páginas que prometan Ox2 ilimitado o soliciten
+        tu contraseña. Las recompensas oficiales deben proceder de
+        canales autorizados por OxygeNMedia.
+      </div>
+    </section>
+
+
+    <!-- PUBLICACIONES -->
+    <section id="publicaciones">
+      <h2>📢 5. Publicaciones</h2>
+
+      <p>
+        Puedes utilizar las publicaciones para compartir contenido con
+        otros usuarios.
+      </p>
+
+      <h3>Crear una publicación</h3>
+
+      <ol>
+        <li>Abre el apartado de creación de publicaciones.</li>
+        <li>Añade el contenido que quieras compartir.</li>
+        <li>Configura las opciones disponibles.</li>
+        <li>Publica el contenido.</li>
+      </ol>
+
+      <h3>🌎 Público o 🔒 privado</h3>
+
+      <p>
+        Si la plataforma ofrece controles de privacidad para una publicación,
+        revisa quién puede verla antes de publicarla.
+      </p>
+
+      <div class="tip">
+        💡 Recuerda que eliminar una publicación no significa necesariamente
+        que otras personas no hayan podido verla anteriormente.
+      </div>
+    </section>
+
+
+    <!-- MUSICA -->
+    <section id="musica">
+      <h2>🎵 6. Música y Spotify</h2>
+
+      <p>
+        OxygeNMedia puede integrar información musical mediante servicios
+        compatibles como Spotify.
+      </p>
+
+      <h3>Mostrar música en tu perfil</h3>
+
+      <ol>
+        <li>Entra en la configuración de tu perfil.</li>
+        <li>Busca la sección de música.</li>
+        <li>Selecciona la canción o información musical disponible.</li>
+        <li>Guarda los cambios.</li>
+      </ol>
+
+      <h3>🎧 Música del momento</h3>
+
+      <p>
+        Puedes utilizar esta función para indicar qué música estás
+        escuchando actualmente, cuando esté disponible.
+      </p>
+
+      <div class="warning">
+        ℹ️ Las funciones de Spotify dependen de la integración disponible
+        y de las condiciones del servicio externo.
+      </div>
+    </section>
+
+
+    <!-- PRIVACIDAD -->
+    <section id="privacidad">
+      <h2>🔒 7. Privacidad</h2>
+
+      <p>
+        OxygeNMedia incluye opciones para controlar qué información
+        compartes públicamente.
+      </p>
+
+      <h3>Información pública</h3>
+
+      <p>
+        La información configurada como pública puede ser visible para
+        otros usuarios o visitantes, dependiendo de la función.
+      </p>
+
+      <h3>Información privada</h3>
+
+      <p>
+        La información configurada como privada está limitada según las
+        opciones de privacidad disponibles en la plataforma.
+      </p>
+
+      <div class="tip">
+        🛡️ Antes de publicar algo, comprueba siempre la configuración
+        de privacidad. Internet tiene una memoria sospechosamente buena.
+      </div>
+
+      <p>
+        Para consultar todos los detalles legales, visita nuestra
+        <a href="/privacidad">Política de Privacidad</a>.
+      </p>
+    </section>
+
+
+    <!-- CUENTA -->
+    <section id="cuenta">
+      <h2>⚙️ 8. Información de tu cuenta</h2>
+
+      <h3>¿Cómo consultar tus datos?</h3>
+
+      <ol>
+        <li>Abre la configuración de tu cuenta.</li>
+        <li>Busca el apartado de información personal o cuenta.</li>
+        <li>Consulta los datos disponibles.</li>
+      </ol>
+
+      <h3>📧 Correo electrónico</h3>
+
+      <p>
+        El correo asociado a tu cuenta puede utilizarse para funciones
+        relacionadas con la seguridad y recuperación de acceso.
+      </p>
+
+      <h3>🔑 Contraseña</h3>
+
+      <p>
+        Nunca compartas tu contraseña con otras personas.
+        OxygeNMedia no necesita que publiques tu contraseña para utilizar
+        las funciones normales de la plataforma.
+      </p>
+    </section>
+
+
+    <!-- SEGURIDAD -->
+    <section id="seguridad">
+      <h2>🛡️ 9. Seguridad</h2>
+
+      <p>
+        Mantener segura una cuenta requiere algunas precauciones básicas.
+      </p>
+
+      <ul>
+        <li>Utiliza una contraseña segura.</li>
+        <li>No compartas tus credenciales.</li>
+        <li>No introduzcas tu contraseña en páginas sospechosas.</li>
+        <li>Comprueba que estás utilizando el dominio oficial.</li>
+        <li>Evita reutilizar la misma contraseña en otros servicios.</li>
+      </ul>
+
+      <div class="warning">
+        🚨 OxygeNMedia nunca debería necesitar tu contraseña para regalarte
+        Ox2 mediante una página externa no oficial.
+      </div>
+    </section>
+
+
+    <!-- PROBLEMAS -->
+    <section id="problemas">
+      <h2>🔧 10. Problemas frecuentes</h2>
+
+      <h3>❓ No aparece mi Ox2</h3>
+
+      <p>
+        Comprueba que la promoción se haya completado correctamente y
+        revisa nuevamente tu saldo después de unos momentos.
+      </p>
+
+      <h3>❓ No puedo iniciar sesión</h3>
+
+      <p>
+        Comprueba tu correo y contraseña. Si olvidaste tu contraseña,
+        utiliza el sistema de recuperación disponible.
+      </p>
+
+      <h3>❓ Una función no funciona</h3>
+
+      <p>
+        Algunas funciones pueden depender de servicios externos,
+        disponibilidad del servidor o actualizaciones de la plataforma.
+      </p>
+
+      <h3>📩 Necesito ayuda</h3>
+
+      <p>
+        Utiliza los canales oficiales de soporte disponibles en
+        OxygeNMedia.
+      </p>
+
+      <div class="tip">
+        💡 Cuando reportes un problema, explica qué estabas intentando hacer,
+        qué ocurrió y, si aparece, el mensaje de error. "No funciona xd"
+        no es precisamente información forense.
+      </div>
+    </section>
+
+  </main>
+
+
+  <footer class="footer">
+    <p>© 2026 OxygeNMedia. Todos los derechos reservados.</p>
+    <p>
+      <a href="/terminos">Términos y Condiciones</a>
+      ·
+      <a href="/privacidad">Política de Privacidad</a>
+    </p>
+  </footer>
+
+</body>
+</html>

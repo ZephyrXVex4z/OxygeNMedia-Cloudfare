@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pixel Art — OxygeNMedia</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<script src="/tema-inline.js"></script>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  :root {
+    --bg: #0f1420; --card: #1a2233; --border: #2a3550; --accent: #5b8def;
+    --accent-hover: #4a7ad9; --text: #e8ecf5; --text-dim: #8b96b0;
+    --success: #4caf7d; --danger: #e35d5d;
+    --radius: 14px; --input-bg: #10182a;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--text);
+    min-height: 100vh; overscroll-behavior: none;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 10;
+  }
+  header h1 { font-size: 17px; margin: 0; display: flex; align-items: center; gap: 8px; }
+  #estadoGuardado { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  button {
+    font-family: var(--font-body);
+    background: var(--accent); color: white; border: none; padding: 9px 14px;
+    border-radius: 10px; font-size: 13.5px; cursor: pointer; font-weight: 600;
+  }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .container { max-width: 720px; margin: 0 auto; padding: 16px 14px 60px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+
+  /* ---- Barra de herramientas superior (siempre visible, Modo Simple) ---- */
+  .barra-superior { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .herramienta-btn {
+    background: var(--input-bg); border: 1px solid var(--border); color: var(--text-dim);
+    width: 42px; height: 42px; border-radius: 10px; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+    position: relative;
+  }
+  .herramienta-btn.activa { border-color: var(--accent); color: var(--accent); background: rgba(91,141,239,0.12); }
+  .herramienta-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .separador-vertical { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+
+  /* ---- Zoom ---- */
+  .control-zoom { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .control-zoom button { width: 32px; height: 32px; padding: 0; border-radius: 8px; font-size: 16px; }
+  .control-zoom span { font-size: 12px; color: var(--text-dim); min-width: 42px; text-align: center; }
+
+  /* ---- Lienzo ---- */
+  #wrapCanvas {
+    display: flex; justify-content: center; align-items: center; padding: 10px;
+    background:
+      linear-gradient(45deg, #202838 25%, transparent 25%),
+      linear-gradient(-45deg, #202838 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #202838 75%),
+      linear-gradient(-45deg, transparent 75%, #202838 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color: #141a28;
+    border-radius: 10px;
+    touch-action: none;
+    overflow: auto;
+    max-height: 60vh;
+  }
+  #pixelCanvas { image-rendering: pixelated; cursor: crosshair; flex-shrink: 0; }
+
+  #coordenadasCursor {
+    text-align: center; font-size: 11.5px; color: var(--text-dim); font-family: monospace;
+    margin-top: 6px; height: 16px;
+  }
+
+  /* ---- Controles de tamaño ---- */
+  .fila-controles { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .fila-controles label { font-size: 12.5px; color: var(--text-dim); }
+  select, input[type="number"] {
+    background: var(--input-bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit;
+  }
+
+  /* ---- Paleta ---- */
+  .paleta-tabs { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 2px; }
+  .paleta-tab {
+    background: var(--input-bg); border: 1px solid var(--border); color: var(--text-dim);
+    padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .paleta-tab.activa { border-color: var(--accent); color: var(--accent); }
+
+  .paleta-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 12px; }
+  .swatch {
+    aspect-ratio: 1; border-radius: 8px; border: 2px solid var(--border); cursor: pointer;
+    position: relative;
+  }
+  .swatch.activo { border-color: white; box-shadow: 0 0 0 2px var(--accent); }
+  .swatch.agregar { display: flex; align-items: center; justify-content: center; background: var(--input-bg); color: var(--text-dim); font-size: 20px; }
+  .swatch .quitar {
+    position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--danger); color: white; font-size: 11px; display: none; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .swatch:hover .quitar { display: flex; }
+
+  .fila-hex { display: flex; gap: 8px; align-items: center; }
+  .fila-hex input[type="text"] { flex: 1; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: monospace; }
+  .fila-hex input[type="color"] { width: 42px; height: 38px; border: 1px solid var(--border); border-radius: 8px; background: none; padding: 0; cursor: pointer; }
+
+  /* ---- Exportar ---- */
+  .fila-exportar { display: flex; gap: 8px; }
+  .fila-exportar select { flex: 1; }
+  .fila-exportar button { flex-shrink: 0; }
+
+  .oculto { display: none !important; }
+
+  /* ---- Importar imagen ---- */
+  .zona-imagen {
+    border: 2px dashed var(--border); border-radius: 10px; padding: 20px 14px;
+    text-align: center; transition: border-color .15s, background .15s;
+  }
+  .zona-imagen.arrastrando { border-color: var(--accent); background: rgba(91,141,239,0.08); }
+  .zona-imagen p { margin: 0 0 10px; font-size: 13px; color: var(--text-dim); }
+  #inputUrlImagen { flex: 1; }
+
+  .info-imagen { font-size: 11.5px; color: var(--text-dim); margin: 10px 0 0; text-align: center; }
+
+  #wrapPreviaImagen {
+    display: flex; justify-content: center; align-items: center; padding: 10px; margin-top: 12px;
+    background:
+      linear-gradient(45deg, #202838 25%, transparent 25%),
+      linear-gradient(-45deg, #202838 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #202838 75%),
+      linear-gradient(-45deg, transparent 75%, #202838 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color: #141a28;
+    border-radius: 10px;
+  }
+  #canvasPreviaImagen { image-rendering: pixelated; max-width: 100%; }
+
+  .fila-controles.imagen { margin-top: 12px; }
+  .fila-controles.imagen label { display: flex; align-items: center; gap: 6px; }
+  .fila-controles.imagen input[type="range"] { accent-color: var(--accent); width: 90px; }
+  .fila-controles.imagen input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+  .fila-acciones-imagen { display: flex; gap: 8px; margin-top: 14px; }
+  .fila-acciones-imagen button { flex: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎨 Pixel Art <span id="estadoGuardado"></span></h1>
+  <a href="/muro"><button class="secondary">Volver</button></a>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <div class="barra-superior">
+      <button class="herramienta-btn activa" data-herramienta="lapiz" title="Lápiz">✏️</button>
+      <button class="herramienta-btn" data-herramienta="borrador" title="Borrador">🧹</button>
+      <button class="herramienta-btn" data-herramienta="relleno" title="Relleno">🪣</button>
+      <button class="herramienta-btn" data-herramienta="gotero" title="Cuentagotas">💧</button>
+      <div class="separador-vertical"></div>
+      <button class="herramienta-btn" id="btnDeshacer" title="Deshacer (Ctrl+Z)">↩️</button>
+      <button class="herramienta-btn" id="btnRehacer" title="Rehacer (Ctrl+Shift+Z)">↪️</button>
+      <div class="control-zoom">
+        <button id="btnZoomMenos" title="Alejar">−</button>
+        <span id="textoZoom">16px</span>
+        <button id="btnZoomMas" title="Acercar">+</button>
+      </div>
+    </div>
+
+    <div id="wrapCanvas">
+      <canvas id="pixelCanvas"></canvas>
+    </div>
+    <div id="coordenadasCursor"></div>
+  </div>
+
+  <div class="card">
+    <div class="fila-controles">
+      <label for="selectTamano">Tamaño de lienzo</label>
+      <select id="selectTamano">
+        <option value="16">16 × 16</option>
+        <option value="24" selected>24 × 24</option>
+        <option value="32">32 × 32</option>
+        <option value="48">48 × 48</option>
+        <option value="64">64 × 64</option>
+      </select>
+      <button type="button" id="btnLimpiarLienzo" class="secondary" style="margin-left:auto;">Limpiar todo</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14.5px; margin:0 0 10px;">Paleta de colores</h3>
+    <div class="paleta-tabs" id="paletaTabs"></div>
+    <div class="paleta-grid" id="paletaGrid"></div>
+    <div class="fila-hex">
+      <input type="color" id="inputColorPicker" value="#5b8def">
+      <input type="text" id="inputHex" placeholder="#5b8def" maxlength="7">
+      <button type="button" id="btnAgregarColor">Agregar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14.5px; margin:0 0 10px;">Importar imagen a Pixel Art</h3>
+
+    <div class="zona-imagen" id="zonaImagen">
+      <p>Arrastra una imagen aquí, o</p>
+      <div class="fila-controles" style="justify-content:center;">
+        <button type="button" id="btnElegirArchivo" class="secondary">📁 Elegir del dispositivo</button>
+        <input type="file" id="inputArchivoImagen" accept="image/*" class="oculto">
+      </div>
+      <div class="fila-hex" style="margin-top:12px;">
+        <input type="text" id="inputUrlImagen" placeholder="…o pega una URL de imagen (https://...)">
+        <button type="button" id="btnCargarUrl">Cargar</button>
+      </div>
+    </div>
+
+    <div id="panelImagenCargada" class="oculto">
+      <p class="info-imagen" id="infoImagenCargada"></p>
+
+      <div id="wrapPreviaImagen">
+        <canvas id="canvasPreviaImagen"></canvas>
+      </div>
+      <p class="info-imagen" id="infoColoresDetectados"></p>
+
+      <div class="fila-controles imagen">
+        <label for="selectAjusteImagen">Ajuste</label>
+        <select id="selectAjusteImagen">
+          <option value="recortar">Recortar a cuadrado</option>
+          <option value="contener">Ver imagen completa</option>
+        </select>
+
+        <label for="selectTamanoImagen">Salida</label>
+        <select id="selectTamanoImagen">
+          <option value="16">16 × 16</option>
+          <option value="24">24 × 24</option>
+          <option value="32">32 × 32</option>
+          <option value="48">48 × 48</option>
+          <option value="64">64 × 64</option>
+        </select>
+      </div>
+
+      <div class="fila-controles imagen">
+        <label for="selectModoColor">Colores</label>
+        <select id="selectModoColor">
+          <option value="8">8 colores</option>
+          <option value="16" selected>16 colores</option>
+          <option value="32">32 colores</option>
+          <option value="64">64 colores</option>
+          <option value="paleta">Usar mi paleta actual</option>
+          <option value="ilimitado">Sin límite (color real)</option>
+        </select>
+        <label><input type="checkbox" id="checkDithering"> Dithering</label>
+      </div>
+
+      <div class="fila-controles imagen">
+        <label for="rangoBrillo">Brillo <input type="range" id="rangoBrillo" min="-60" max="60" value="0"></label>
+        <label for="rangoContraste">Contraste <input type="range" id="rangoContraste" min="-60" max="60" value="0"></label>
+        <label for="rangoSaturacion">Saturación <input type="range" id="rangoSaturacion" min="-100" max="100" value="0"></label>
+      </div>
+
+      <div class="fila-acciones-imagen">
+        <button type="button" id="btnAplicarImagen">✔ Aplicar al lienzo</button>
+        <button type="button" id="btnCancelarImagen" class="secondary">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14.5px; margin:0 0 10px;">Exportar</h3>
+    <div class="fila-exportar">
+      <select id="selectMultiplicador">
+        <option value="1">1× (tamaño real)</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+        <option value="8" selected>8×</option>
+        <option value="16">16×</option>
+      </select>
+      <button type="button" id="btnExportarPng">⬇ Exportar PNG</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="/pixel-art/pixel-app.js"></script>
+
+</body>
+</html>

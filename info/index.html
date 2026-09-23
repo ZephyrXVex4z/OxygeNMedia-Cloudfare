@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Guía para nuevos usuarios de OxygeNMedia. Descubre qué es, cómo funciona y qué puedes hacer dentro de la plataforma.">
+  <meta name="theme-color" content="#0A0E0A">
+
+  <title>Guía para nuevos | OxygeNMedia</title>
+
+  <!-- =========================================================
+       TEMA INLINE
+       Debe ejecutarse de forma síncrona antes de pintar la página.
+       ========================================================= -->
+  <script>
+  (function() {
+    try {
+      var TEMAS_RAPIDO = {
+        terminal: {
+          "--bg":"#0A0E0A",
+          "--card":"#0F1710",
+          "--border":"#1F8C52",
+          "--accent":"#3FFF8F",
+          "--accent-hover":"#2FE07A",
+          "--text":"#C9F5D8",
+          "--text-dim":"#5C9C77",
+          "--danger":"#FF5C5C",
+          "--success":"#3FFF8F",
+          "--warn":"#FFB627",
+          "--radius":"2px",
+          "--card-shadow":"none",
+          "--font-weight-heading":"700",
+          "--input-bg":"#050805"
+        },
+
+        neobrutal: {
+          "--bg":"#FFF4E0",
+          "--card":"#FFFFFF",
+          "--border":"#16161A",
+          "--accent":"#FF5C8A",
+          "--accent-hover":"#E84577",
+          "--text":"#16161A",
+          "--text-dim":"#4A453D",
+          "--danger":"#E84545",
+          "--success":"#6FCF97",
+          "--warn":"#FFD23F",
+          "--radius":"10px",
+          "--card-shadow":"5px 5px 0 var(--border)",
+          "--font-weight-heading":"700",
+          "--input-bg":"#FFF4E0"
+        },
+
+        editorial: {
+          "--bg":"#EFE8DC",
+          "--card":"#F8F4EB",
+          "--border":"#D8CFBE",
+          "--accent":"#A65B3F",
+          "--accent-hover":"#8C4A32",
+          "--text":"#2B2620",
+          "--text-dim":"#6B6255",
+          "--danger":"#B0473A",
+          "--success":"#6B7A5E",
+          "--warn":"#B8863B",
+          "--radius":"2px",
+          "--card-shadow":"none",
+          "--font-weight-heading":"400",
+          "--input-bg":"#EFE8DC"
+        },
+
+        aurora: {
+          "--bg":"#0D0B1F",
+          "--card":"rgba(255,255,255,0.06)",
+          "--border":"rgba(255,255,255,0.14)",
+          "--accent":"#B08CFF",
+          "--accent-hover":"#9A6FFF",
+          "--text":"#F0EEFF",
+          "--text-dim":"#9C93C4",
+          "--danger":"#FF7A9C",
+          "--success":"#7CE8C4",
+          "--warn":"#FFC98C",
+          "--radius":"16px",
+          "--card-shadow":"0 8px 32px rgba(120,80,255,0.15)",
+          "--font-weight-heading":"700",
+          "--input-bg":"rgba(255,255,255,0.05)"
+        },
+
+        minimal: {
+          "--bg":"#FFFFFF",
+          "--card":"#FFFFFF",
+          "--border":"#E4E4E4",
+          "--accent":"#111111",
+          "--accent-hover":"#333333",
+          "--text":"#111111",
+          "--text-dim":"#8A8A8A",
+          "--danger":"#D64545",
+          "--success":"#2E9E5B",
+          "--warn":"#B8862E",
+          "--radius":"6px",
+          "--card-shadow":"none",
+          "--font-weight-heading":"600",
+          "--input-bg":"#F7F7F7"
+        }
+      };
+
+      var idTema = localStorage.getItem("oxygenmedia_tema") || "terminal";
+      var vars = TEMAS_RAPIDO[idTema] || TEMAS_RAPIDO.terminal;
+      var root = document.documentElement;
+
+      for (var k in vars) {
+        root.style.setProperty(k, vars[k]);
+      }
+
+    } catch (e) {
+      /* Si falla, el CSS utiliza el tema por defecto. */
+    }
+  })();
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      line-height: 1.65;
+      min-height: 100vh;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .container {
+      width: min(1050px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    /* ================= HEADER ================= */
+
+    header {
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav {
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      color: var(--text);
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: -0.5px;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: var(--text-dim);
+      font-size: 0.92rem;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+    }
+
+    /* ================= HERO ================= */
+
+    .hero {
+      padding: 90px 0 70px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 5px 12px;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 22px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 8vw, 5.2rem);
+      line-height: 1;
+      letter-spacing: -3px;
+      font-weight: var(--font-weight-heading);
+      margin-bottom: 25px;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .hero p {
+      max-width: 720px;
+      margin: 0 auto;
+      color: var(--text-dim);
+      font-size: 1.1rem;
+    }
+
+    /* ================= SECTIONS ================= */
+
+    section {
+      padding: 65px 0;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 5vw, 2.7rem);
+      line-height: 1.15;
+      margin-bottom: 12px;
+      font-weight: var(--font-weight-heading);
+    }
+
+    .section-intro {
+      color: var(--text-dim);
+      max-width: 720px;
+      margin-bottom: 32px;
+    }
+
+    /* ================= CARDS ================= */
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .card h3 {
+      margin-bottom: 10px;
+      font-size: 1.15rem;
+      font-weight: var(--font-weight-heading);
+    }
+
+    .card p {
+      color: var(--text-dim);
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 17px;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    /* ================= STEPS ================= */
+
+    .steps {
+      display: grid;
+      gap: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 45px 1fr;
+      gap: 17px;
+      align-items: start;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--card-shadow);
+    }
+
+    .step-number {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: 800;
+    }
+
+    .step h3 {
+      margin-bottom: 4px;
+    }
+
+    .step p {
+      color: var(--text-dim);
+    }
+
+    /* ================= NOTICE ================= */
+
+    .notice {
+      border-left: 4px solid var(--accent);
+      padding: 20px 22px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+    }
+
+    .notice strong {
+      color: var(--accent);
+    }
+
+    /* ================= CTA ================= */
+
+    .cta {
+      text-align: center;
+      padding: 70px 25px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--card-shadow);
+    }
+
+    .cta h2 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      margin-bottom: 12px;
+    }
+
+    .cta p {
+      color: var(--text-dim);
+      max-width: 650px;
+      margin: 0 auto 25px;
+    }
+
+    .button {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 11px 20px;
+      border-radius: var(--radius);
+      font-weight: 800;
+      border: 1px solid var(--accent);
+      transition: 0.2s ease;
+    }
+
+    .button:hover {
+      background: var(--accent-hover);
+      color: var(--bg);
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+
+    .button.secondary {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+      margin-left: 8px;
+    }
+
+    .button.secondary:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* ================= FOOTER ================= */
+
+    footer {
+      border-top: 1px solid var(--border);
+      margin-top: 70px;
+      padding: 30px 0;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    /* ================= MOBILE ================= */
+
+    @media (max-width: 700px) {
+      .nav {
+        padding: 12px 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .hero {
+        padding: 65px 0 50px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button {
+        width: 100%;
+        text-align: center;
+      }
+
+      .button.secondary {
+        margin-left: 0;
+        margin-top: 10px;
+      }
+
+      h1 {
+        letter-spacing: -2px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ================= HEADER ================= -->
+
+  <header>
+    <div class="container nav">
+
+      <a class="brand" href="/">
+        OxygeN<span>Media</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Navegación principal">
+        <a href="/">Inicio</a>
+        <a href="#funciones">Funciones</a>
+        <a href="#primeros-pasos">Primeros pasos</a>
+        <a href="/terminos">Términos de uso</a>
+      </nav>
+
+    </div>
+  </header>
+
+
+  <main>
+
+    <!-- ================= HERO ================= -->
+
+    <section class="hero">
+      <div class="container">
+
+        <div class="eyebrow">
+          Guía para nuevos usuarios
+        </div>
+
+        <h1>
+          Bienvenido a<br>
+          <span>OxygeNMedia</span>
+        </h1>
+
+        <p>
+          OxygeNMedia es una plataforma social y multimedia donde puedes
+          compartir contenido, descubrir publicaciones y expresar tus
+          intereses a tu manera.
+        </p>
+
+      </div>
+    </section>
+
+
+    <!-- ================= QUÉ ES ================= -->
+
+    <section>
+      <div class="container">
+
+        <h2 class="section-title">
+          ¿Qué es OxygeNMedia?
+        </h2>
+
+        <p class="section-intro">
+          OxygeNMedia busca reunir diferentes tipos de contenido en un mismo
+          espacio. La plataforma está pensada para que las personas puedan
+          compartir cosas que les interesan, descubrir contenido de otros
+          usuarios y construir una experiencia personalizada.
+        </p>
+
+        <div class="notice">
+          <strong>En pocas palabras:</strong>
+          OxygeNMedia es un espacio para compartir y descubrir contenido.
+          Memes, información, música, publicaciones y mucho más pueden formar
+          parte de la plataforma.
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= FUNCIONES ================= -->
+
+    <section id="funciones">
+      <div class="container">
+
+        <h2 class="section-title">
+          ¿Qué puedes hacer?
+        </h2>
+
+        <p class="section-intro">
+          Estas son algunas de las posibilidades que forman parte de
+          OxygeNMedia.
+        </p>
+
+        <div class="grid">
+
+          <article class="card">
+            <div class="icon">01</div>
+            <h3>Compartir memes</h3>
+            <p>
+              Publica memes y contenido pensado para entretener a la
+              comunidad.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon">02</div>
+            <h3>Compartir información</h3>
+            <p>
+              Publica información, ideas, datos y contenido que pueda resultar
+              interesante para otros usuarios.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon">03</div>
+            <h3>Compartir música</h3>
+            <p>
+              La música es una parte importante de OxygeNMedia. Puedes
+              compartir tus gustos y descubrir contenido musical.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon">04</div>
+            <h3>Personalizar tu experiencia</h3>
+            <p>
+              OxygeNMedia incorpora diferentes opciones de personalización
+              para que la plataforma se adapte a cada usuario.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon">05</div>
+            <h3>Descubrir contenido</h3>
+            <p>
+              Explora publicaciones de otros usuarios y encuentra contenido
+              diferente dentro de la comunidad.
+            </p>
+          </article>
+
+          <article class="card">
+            <div class="icon">06</div>
+            <h3>Contenido variado</h3>
+            <p>
+              No estás limitado a un único tipo de publicación. OxygeNMedia
+              está diseñado para admitir diferentes formas de contenido.
+            </p>
+          </article>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= MÚSICA ================= -->
+
+    <section>
+      <div class="container">
+
+        <h2 class="section-title">
+          Música 🎵
+        </h2>
+
+        <p class="section-intro">
+          OxygeNMedia cuenta con integraciones relacionadas con música para
+          ofrecer una experiencia más completa alrededor de tus gustos
+          musicales.
+        </p>
+
+        <div class="grid">
+
+          <article class="card">
+            <h3>Tu música</h3>
+            <p>
+              Comparte música que te gusta y utiliza las funciones musicales
+              disponibles en la plataforma para expresar tus preferencias.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Descubrimiento</h3>
+            <p>
+              Las integraciones musicales permiten conectar diferentes
+              fuentes de información para mejorar la experiencia relacionada
+              con artistas y canciones.
+            </p>
+          </article>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= PRIMEROS PASOS ================= -->
+
+    <section id="primeros-pasos">
+      <div class="container">
+
+        <h2 class="section-title">
+          Tus primeros pasos
+        </h2>
+
+        <p class="section-intro">
+          Si acabas de llegar, no necesitas estudiar un manual de 400 páginas
+          como si fueras a operar un reactor nuclear. Empieza por lo básico.
+        </p>
+
+        <div class="steps">
+
+          <div class="step">
+            <div class="step-number">1</div>
+            <div>
+              <h3>Explora la plataforma</h3>
+              <p>
+                Recorre las diferentes secciones y familiarízate con la
+                interfaz.
+              </p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">2</div>
+            <div>
+              <h3>Configura tu perfil</h3>
+              <p>
+                Personaliza tu perfil y las opciones disponibles para
+                representar mejor tus intereses.
+              </p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+            <div>
+              <h3>Descubre contenido</h3>
+              <p>
+                Explora publicaciones y contenido de otros usuarios.
+              </p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">4</div>
+            <div>
+              <h3>Comparte algo</h3>
+              <p>
+                Cuando estés listo, crea tu primera publicación y forma parte
+                de la comunidad.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= PRIVACIDAD Y USO ================= -->
+
+    <section>
+      <div class="container">
+
+        <h2 class="section-title">
+          Usa OxygeNMedia de forma responsable
+        </h2>
+
+        <p class="section-intro">
+          Como cualquier plataforma con contenido generado por usuarios,
+          existen reglas para mantener un entorno funcional y seguro.
+        </p>
+
+        <div class="notice">
+          <strong>Importante:</strong>
+          esta guía explica el funcionamiento general de OxygeNMedia.
+          Las reglas completas, condiciones de uso y disposiciones aplicables
+          se encuentran en los
+          <a href="/terminos">Términos de Uso</a>.
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= TECNOLOGÍA ================= -->
+
+    <section>
+      <div class="container">
+
+        <h2 class="section-title">
+          Tecnología detrás de OxygeNMedia
+        </h2>
+
+        <p class="section-intro">
+          OxygeNMedia combina tecnologías web con diferentes servicios y APIs
+          para proporcionar sus funciones.
+        </p>
+
+        <div class="grid">
+
+          <article class="card">
+            <h3>Web</h3>
+            <p>
+              La plataforma está desarrollada principalmente utilizando
+              HTML5, JavaScript y CSS.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Datos y almacenamiento</h3>
+            <p>
+              OxygeNMedia utiliza Firestore y Cloudflare R2 para gestionar
+              información y archivos multimedia.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>Música</h3>
+            <p>
+              Las integraciones con Spotify y Last.fm permiten incorporar
+              información y funciones relacionadas con música.
+            </p>
+          </article>
+
+          <article class="card">
+            <h3>IA y notificaciones</h3>
+            <p>
+              Gemini y OneSignal forman parte de las tecnologías utilizadas
+              para determinadas funciones de inteligencia artificial y
+              notificaciones.
+            </p>
+          </article>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= CTA ================= -->
+
+    <section>
+      <div class="container">
+
+        <div class="cta">
+
+          <h2>Ya sabes lo básico.</h2>
+
+          <p>
+            Explora OxygeNMedia, descubre contenido y empieza a construir tu
+            propia experiencia dentro de la plataforma.
+          </p>
+
+          <a class="button" href="/">
+            Ir a OxygeNMedia
+          </a>
+
+          <a class="button secondary" href="/terminos">
+            Ver Términos de Uso
+          </a>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ================= FOOTER ================= -->
+
+  <footer>
+    <div class="container footer-inner">
+
+      <div>
+        © 2026 OxygeNMedia
+      </div>
+
+      <div>
+        <a href="/terminos">Términos de Uso</a>
+      </div>
+
+    </div>
+  </footer>
+
+</body>
+</html>

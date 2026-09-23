@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asistente — OxygeNMedia</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<script src="/tema-inline.js"></script>
+<script src="/fuente-inline.js"></script>
+<style>
+  :root {
+    --bg: #0f1420; --card: #1a2233; --border: #2a3550; --accent: #5b8def;
+    --accent-hover: #4a7ad9; --text: #e8ecf5; --text-dim: #8b96b0;
+    --danger: #e35d5d; --success: #4caf7d;
+    --bubble-me: #5b8def; --bubble-other: #232d45;
+    --radius: 14px; --card-shadow: none; --input-bg: #10182a;
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-weight-heading: 700;
+  }
+  * { box-sizing: border-box; }
+  html {
+    /* Se sobreescribe con JS usando visualViewport.height cuando el teclado
+       está abierto — en algunos navegadores móviles (sobre todo Android)
+       100dvh no se recalcula de forma confiable al abrirse el teclado
+       virtual, dejando la barra de escribir fuera de la pantalla visible. */
+    height: 100%;
+  }
+  body {
+    margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--text);
+    height: 100vh; height: 100dvh; height: var(--alto-real, 100dvh);
+    overflow: hidden; overscroll-behavior: none;
+    display: flex; flex-direction: column;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: var(--font-weight-heading); }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  header h1 { font-size: 17px; margin: 0; display: flex; align-items: center; gap: 8px; }
+  button {
+    font-family: var(--font-body); background: var(--accent); color: white; border: none;
+    padding: 9px 14px; border-radius: var(--radius); font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  button:hover { background: var(--accent-hover); }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  button.secondary:hover { background: var(--card); }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .messages {
+    flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;
+    max-width: 720px; width: 100%; margin: 0 auto;
+  }
+  .msg-bubble {
+    max-width: 80%; padding: 10px 14px; border-radius: var(--radius); font-size: 14px;
+    line-height: 1.5; white-space: pre-wrap;
+  }
+  .msg-bubble.mine { align-self: flex-end; background: var(--bubble-me); color: white; border-bottom-right-radius: 3px; }
+  .msg-bubble.suya { align-self: flex-start; background: var(--bubble-other); border-bottom-left-radius: 3px; }
+  .msg-bubble.error { align-self: center; background: rgba(227,93,93,0.12); color: var(--danger); font-size: 13px; }
+  .msg-bubble.pensando { align-self: flex-start; background: var(--bubble-other); color: var(--text-dim); font-style: italic; }
+
+  .empty-chat {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--text-dim); text-align: center; gap: 10px; padding: 20px;
+  }
+  .empty-chat .icono { font-size: 40px; }
+  .empty-chat p { max-width: 320px; font-size: 14px; margin: 0; }
+
+  .input-row {
+    display: flex; gap: 10px; padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border); flex-shrink: 0; max-width: 720px; width: 100%; margin: 0 auto;
+  }
+  .input-row input {
+    flex: 1; padding: 11px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--input-bg); color: var(--text); font-size: 16px; font-family: var(--font-body);
+  }
+  .hidden { display: none !important; }
+
+  /* Panel flotante (mismo patrón que el selector de temas/fuentes del muro):
+     aparece "despegándose" desde abajo en vez de ocupar espacio fijo. */
+  .tema-panel-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 95;
+    opacity: 0; visibility: hidden; transition: opacity 0.2s ease;
+  }
+  .tema-panel-overlay.open { opacity: 1; visibility: visible; }
+  .tema-panel {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 96;
+    background: var(--card); border-top: 1px solid var(--border);
+    border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    max-height: 70vh; overflow-y: auto;
+    transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .tema-panel.open { transform: translateY(0); }
+  .tema-panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 15px; margin-bottom: 14px;
+  }
+  .tema-panel-cerrar {
+    background: none; border: none; color: var(--text-dim); font-size: 16px;
+    cursor: pointer; padding: 4px 8px;
+  }
+  .personalidad-item {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: none; color: var(--text); cursor: pointer; font-family: var(--font-body);
+  }
+  .personalidad-item:hover { background: rgba(255,255,255,0.05); }
+  .personalidad-item.activa { border-color: var(--accent); background: rgba(91,141,239,0.08); }
+  .personalidad-item .emoji { font-size: 22px; flex-shrink: 0; }
+  .personalidad-item .nombre { font-weight: 600; font-size: 14px; }
+  .personalidad-item .desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .personalidad-item .check { margin-left: auto; opacity: 0; color: var(--accent); }
+  .personalidad-item.activa .check { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span id="emojiPersonalidad">🤖</span> Asistente</h1>
+  <div style="display:flex; gap:8px;">
+    <button class="secondary" id="btnAbrirPersonalidad">Personalidad</button>
+    <button class="secondary hidden" id="btnAbrirImagenes">🎨 Imágenes</button>
+    <button class="secondary" id="btnNuevaConversacion">Nueva conversación</button>
+    <a href="/muro"><button class="secondary">Volver</button></a>
+  </div>
+</header>
+
+<div class="messages" id="messages">
+  <div class="empty-chat" id="emptyChat">
+    <div class="icono">🤖</div>
+    <p>Pregúntame lo que quieras — desde cómo funciona OxygeNMedia hasta cualquier otro tema.</p>
+  </div>
+</div>
+
+<div class="input-row">
+  <input type="text" id="inputMensaje" placeholder="Escribe un mensaje..." maxlength="2000">
+  <button id="btnEnviar">Enviar</button>
+</div>
+
+<!-- Panel flotante del selector de personalidad, mismo patrón que el
+     selector de temas/fuentes de muro-index.html: se despliega desde abajo. -->
+<div class="tema-panel-overlay" id="personalidadPanelOverlay"></div>
+<div class="tema-panel" id="personalidadPanel">
+  <div class="tema-panel-header">
+    <span>Elige una personalidad</span>
+    <button class="tema-panel-cerrar" id="btnCerrarPersonalidadPanel" type="button">✕</button>
+  </div>
+  <div id="listaPersonalidades" style="display:flex; flex-direction:column; gap:8px;"></div>
+</div>
+
+<!-- Panel flotante del generador de imágenes. Antes de mostrar el iframe de
+     Perchance, se exige aceptar una advertencia explícita — Perchance no
+     tiene un filtro de contenido que controlemos nosotros, así que el
+     usuario debe saber esto antes de poder generar nada. -->
+<div class="tema-panel-overlay" id="imagenesPanelOverlay"></div>
+<div class="tema-panel" id="imagenesPanel" style="max-height:88vh;">
+  <div class="tema-panel-header">
+    <span>🎨 Generador de imágenes</span>
+    <button class="tema-panel-cerrar" id="btnCerrarImagenesPanel" type="button">✕</button>
+  </div>
+
+  <div id="vistaAdvertenciaImagenes">
+    <div style="background:rgba(227,93,93,0.12); border:1px solid rgba(227,93,93,0.35); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px;">
+      <p style="margin:0 0 8px; font-weight:700; color:var(--danger); font-size:14px;">⚠️ Contenido no moderado por OxygeNMedia</p>
+      <p style="margin:0 0 8px; font-size:13px; line-height:1.55; color:var(--text);">
+        Este generador de imágenes usa un servicio externo (Perchance), fuera del control de OxygeNMedia.
+        Puede producir imágenes inesperadas, extrañas, o <strong>no aptas para todo público</strong> — no tenemos
+        forma de filtrar ni garantizar el resultado antes de que lo veas.
+      </p>
+      <p style="margin:0; font-size:13px; line-height:1.55; color:var(--text);">
+        Si eres menor de edad, sensible a contenido fuerte, o simplemente prefieres evitarlo, no continúes.
+        Puedes usar el resto del sitio con total normalidad sin necesitar esto.
+      </p>
+    </div>
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:13px; margin-bottom:16px; cursor:pointer;">
+      <input type="checkbox" id="checkEntendidoImagenes" style="margin-top:3px;">
+      <span>Entiendo que este contenido no está moderado por OxygeNMedia y puede no ser apto para todo público. Quiero continuar bajo mi propia responsabilidad.</span>
+    </label>
+    <button id="btnConfirmarAdvertenciaImagenes" style="width:100%;" disabled>Continuar al generador</button>
+  </div>
+
+  <div id="vistaGeneradorImagenes" class="hidden">
+    <p style="font-size:11.5px; color:var(--text-dim); margin:0 0 10px;">Servicio externo — el contenido generado no está moderado por OxygeNMedia.</p>
+    <div id="contenedorIframePerchance" style="border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); height:65vh;"></div>
+  </div>
+</div>
+
+<script type="module">
+import {
+  protegerPaginaAsistente, enviarMensajeAsistente, reiniciarConversacion, ASISTENTE_ACTIVO,
+  PERSONALIDADES, cargarPersonalidadGuardada, elegirPersonalidad, obtenerPersonalidadActual,
+  GENERADOR_IMAGENES_ACTIVO, URL_GENERADOR_PERCHANCE, yaAceptoAdvertenciaImagenes, aceptarAdvertenciaImagenes
+} from "/asistente.js";
+const messagesDiv = document.getElementById("messages");
+const emptyChat = document.getElementById("emptyChat");
+const inputMensaje = document.getElementById("inputMensaje");
+const btnEnviar = document.getElementById("btnEnviar");
+const btnNuevaConversacion = document.getElementById("btnNuevaConversacion");
+
+// ============ FIX: teclado virtual tapando la barra de escribir en móvil ============
+// 100dvh no siempre se recalcula de forma confiable cuando el teclado virtual
+// se abre (sobre todo en Android). window.visualViewport SÍ reporta la
+// altura real visible en tiempo real, así que se usa esa medida para fijar
+// la altura verdadera del body vía la variable --alto-real, y además se
+// hace scroll para asegurar que el input quede a la vista al enfocarlo.
+if (window.visualViewport) {
+  const ajustarAltoReal = () => {
+    document.documentElement.style.setProperty("--alto-real", window.visualViewport.height + "px");
+  };
+  window.visualViewport.addEventListener("resize", ajustarAltoReal);
+  window.visualViewport.addEventListener("scroll", ajustarAltoReal);
+  ajustarAltoReal();
+}
+
+inputMensaje.addEventListener("focus", () => {
+  // Pequeño delay: el teclado tarda un instante en terminar de animarse: si
+  // se hace scroll antes de que termine, el navegador puede recalcular y
+  // dejar el input tapado de nuevo.
+  setTimeout(() => {
+    inputMensaje.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, 300);
+});
+
+protegerPaginaAsistente(async (user) => {
+  if (!ASISTENTE_ACTIVO) {
+    document.body.innerHTML = "<div style='padding:60px;text-align:center;color:#8b96b0;'>El asistente todavía no está disponible. <br><br><a href='/muro' style='color:#5b8def;'>Volver al sitio</a></div>";
+    return;
+  }
+  inputMensaje.focus();
+  uidActual = user.uid;
+  await cargarPersonalidadGuardada(user.uid);
+  actualizarEmojiHeader();
+  advertenciaImagenesYaAceptada = await yaAceptoAdvertenciaImagenes(user.uid);
+  btnAbrirImagenes.classList.toggle("hidden", !GENERADOR_IMAGENES_ACTIVO);
+});
+
+// ============ SELECTOR DE PERSONALIDAD ============
+let uidActual = null;
+const emojiPersonalidad = document.getElementById("emojiPersonalidad");
+const btnAbrirPersonalidad = document.getElementById("btnAbrirPersonalidad");
+const personalidadPanel = document.getElementById("personalidadPanel");
+const personalidadPanelOverlay = document.getElementById("personalidadPanelOverlay");
+const btnCerrarPersonalidadPanel = document.getElementById("btnCerrarPersonalidadPanel");
+const listaPersonalidades = document.getElementById("listaPersonalidades");
+
+function actualizarEmojiHeader() {
+  emojiPersonalidad.textContent = obtenerPersonalidadActual().emoji;
+}
+
+function renderListaPersonalidades() {
+  const activa = obtenerPersonalidadActual().id;
+  listaPersonalidades.innerHTML = Object.values(PERSONALIDADES).map(p => `
+    <button type="button" class="personalidad-item ${p.id === activa ? "activa" : ""}" data-personalidad="${p.id}">
+      <span class="emoji">${p.emoji}</span>
+      <span>
+        <div class="nombre">${p.nombre}</div>
+        <div class="desc">${p.descripcion}</div>
+      </span>
+      <span class="check">✓</span>
+    </button>
+  `).join("");
+
+  listaPersonalidades.querySelectorAll("[data-personalidad]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (!uidActual) return;
+      try {
+        await elegirPersonalidad(uidActual, btn.dataset.personalidad);
+        actualizarEmojiHeader();
+        renderListaPersonalidades();
+        cerrarPersonalidadPanel();
+      } catch (err) {
+        alert("Error al cambiar personalidad: " + err.message);
+      }
+    });
+  });
+}
+
+function abrirPersonalidadPanel() {
+  renderListaPersonalidades();
+  personalidadPanel.classList.add("open");
+  personalidadPanelOverlay.classList.add("open");
+}
+function cerrarPersonalidadPanel() {
+  personalidadPanel.classList.remove("open");
+  personalidadPanelOverlay.classList.remove("open");
+}
+btnAbrirPersonalidad.addEventListener("click", abrirPersonalidadPanel);
+btnCerrarPersonalidadPanel.addEventListener("click", cerrarPersonalidadPanel);
+personalidadPanelOverlay.addEventListener("click", cerrarPersonalidadPanel);
+
+// ============ GENERADOR DE IMÁGENES (Perchance embebido, tras advertencia) ============
+let advertenciaImagenesYaAceptada = false;
+const btnAbrirImagenes = document.getElementById("btnAbrirImagenes");
+const imagenesPanel = document.getElementById("imagenesPanel");
+const imagenesPanelOverlay = document.getElementById("imagenesPanelOverlay");
+const btnCerrarImagenesPanel = document.getElementById("btnCerrarImagenesPanel");
+const vistaAdvertenciaImagenes = document.getElementById("vistaAdvertenciaImagenes");
+const vistaGeneradorImagenes = document.getElementById("vistaGeneradorImagenes");
+const checkEntendidoImagenes = document.getElementById("checkEntendidoImagenes");
+const btnConfirmarAdvertenciaImagenes = document.getElementById("btnConfirmarAdvertenciaImagenes");
+const contenedorIframePerchance = document.getElementById("contenedorIframePerchance");
+
+function mostrarVistaSegunEstado() {
+  vistaAdvertenciaImagenes.classList.toggle("hidden", advertenciaImagenesYaAceptada);
+  vistaGeneradorImagenes.classList.toggle("hidden", !advertenciaImagenesYaAceptada);
+  if (advertenciaImagenesYaAceptada) montarIframeSiHaceFalta();
+}
+
+// El iframe solo se crea la PRIMERA vez que se acepta/abre — evita recargar
+// (y perder el estado de) el generador cada vez que se abre y cierra el panel.
+function montarIframeSiHaceFalta() {
+  if (contenedorIframePerchance.querySelector("iframe")) return;
+  const iframe = document.createElement("iframe");
+  iframe.src = URL_GENERADOR_PERCHANCE;
+  iframe.style.cssText = "width:100%; height:100%; border:none;";
+  iframe.setAttribute("allow", "clipboard-write");
+  contenedorIframePerchance.appendChild(iframe);
+}
+
+function abrirImagenesPanel() {
+  mostrarVistaSegunEstado();
+  imagenesPanel.classList.add("open");
+  imagenesPanelOverlay.classList.add("open");
+}
+function cerrarImagenesPanel() {
+  imagenesPanel.classList.remove("open");
+  imagenesPanelOverlay.classList.remove("open");
+}
+btnAbrirImagenes.addEventListener("click", abrirImagenesPanel);
+btnCerrarImagenesPanel.addEventListener("click", cerrarImagenesPanel);
+imagenesPanelOverlay.addEventListener("click", cerrarImagenesPanel);
+
+checkEntendidoImagenes.addEventListener("change", () => {
+  btnConfirmarAdvertenciaImagenes.disabled = !checkEntendidoImagenes.checked;
+});
+
+btnConfirmarAdvertenciaImagenes.addEventListener("click", async () => {
+  if (!uidActual || !checkEntendidoImagenes.checked) return;
+  btnConfirmarAdvertenciaImagenes.disabled = true;
+  btnConfirmarAdvertenciaImagenes.textContent = "Un momento...";
+  try {
+    await aceptarAdvertenciaImagenes(uidActual);
+    advertenciaImagenesYaAceptada = true;
+    mostrarVistaSegunEstado();
+  } catch (err) {
+    alert("No se pudo continuar: " + err.message);
+    btnConfirmarAdvertenciaImagenes.disabled = false;
+    btnConfirmarAdvertenciaImagenes.textContent = "Continuar al generador";
+  }
+});
+
+function agregarBurbuja(texto, tipo) {
+  emptyChat.classList.add("hidden");
+  const bubble = document.createElement("div");
+  bubble.className = "msg-bubble " + tipo;
+  bubble.textContent = texto;
+  messagesDiv.appendChild(bubble);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  return bubble;
+}
+
+async function enviar() {
+  const texto = inputMensaje.value.trim();
+  if (!texto) return;
+
+  inputMensaje.value = "";
+  inputMensaje.disabled = true;
+  btnEnviar.disabled = true;
+
+  agregarBurbuja(texto, "mine");
+  const bubblePensando = agregarBurbuja("Pensando...", "pensando");
+
+  try {
+    const respuesta = await enviarMensajeAsistente(texto);
+    bubblePensando.remove();
+    agregarBurbuja(respuesta, "suya");
+  } catch (err) {
+    bubblePensando.remove();
+    agregarBurbuja(err.message, "error");
+  }
+
+  inputMensaje.disabled = false;
+  btnEnviar.disabled = false;
+  inputMensaje.focus();
+}
+
+btnEnviar.addEventListener("click", enviar);
+inputMensaje.addEventListener("keydown", (e) => { if (e.key === "Enter") enviar(); });
+
+btnNuevaConversacion.addEventListener("click", () => {
+  if (!confirm("¿Empezar una conversación nueva? Se perderá el historial actual.")) return;
+  reiniciarConversacion();
+  messagesDiv.innerHTML = "";
+  messagesDiv.appendChild(emptyChat);
+  emptyChat.classList.remove("hidden");
+});
+</script>
+
+</body>
+</html>

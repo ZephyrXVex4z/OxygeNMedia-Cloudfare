@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Política de Privacidad | OxygeNMedia</title>
+
+  <meta
+    name="description"
+    content="Política de privacidad de OxygeNMedia. Conoce cómo recopilamos, utilizamos y protegemos la información de los usuarios."
+  >
+
+  <style>
+    :root {
+      --bg: #0b0b0b;
+      --surface: #111111;
+      --surface-2: #181818;
+      --text: #f5f5f5;
+      --muted: #a7a7a7;
+      --primary: #ffffff;
+      --border: rgba(255,255,255,.12);
+      --radius: 18px;
+      --shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background .25s ease, color .25s ease;
+    }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar-inner {
+      max-width: 1050px;
+      margin: auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -.5px;
+    }
+
+    .brand span {
+      opacity: .55;
+    }
+
+    .back {
+      font-size: .9rem;
+      color: var(--muted);
+    }
+
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 70px 20px 100px;
+    }
+
+    .hero {
+      padding: 35px;
+      margin-bottom: 30px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 7vw, 4.5rem);
+      line-height: 1;
+      letter-spacing: -3px;
+      margin-bottom: 20px;
+    }
+
+    .intro {
+      color: var(--muted);
+      max-width: 700px;
+      font-size: 1.05rem;
+    }
+
+    .updated {
+      margin-top: 22px;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      font-size: 1rem;
+      margin: 20px 0 8px;
+    }
+
+    p {
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    ul {
+      color: var(--muted);
+      padding-left: 22px;
+      margin: 10px 0;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    strong {
+      color: var(--text);
+    }
+
+    .notice {
+      border-left: 4px solid var(--primary);
+      background: var(--surface-2);
+      padding: 18px;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+
+    .footer {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px 50px;
+      color: var(--muted);
+      text-align: center;
+      font-size: .85rem;
+    }
+
+    .footer a {
+      color: var(--text);
+    }
+
+    /* =========================
+       TEMAS INLINE
+       ========================= */
+
+    html[data-theme="terminal"] {
+      --bg: #050805;
+      --surface: #0b110b;
+      --surface-2: #101a10;
+      --text: #d7ffd7;
+      --muted: #91ad91;
+      --primary: #65ff65;
+      --border: rgba(101,255,101,.16);
+      --radius: 8px;
+    }
+
+    html[data-theme="neobrutal"] {
+      --bg: #f4f1e8;
+      --surface: #ffffff;
+      --surface-2: #f2df00;
+      --text: #111111;
+      --muted: #333333;
+      --primary: #111111;
+      --border: #111111;
+      --radius: 4px;
+      --shadow: 7px 7px 0 #111111;
+    }
+
+    html[data-theme="editorial"] {
+      --bg: #f4f0e8;
+      --surface: #fffdf8;
+      --surface-2: #ebe5d9;
+      --text: #24211d;
+      --muted: #666158;
+      --primary: #24211d;
+      --border: rgba(36,33,29,.15);
+      --radius: 2px;
+      --shadow: 0 8px 30px rgba(50,40,25,.08);
+    }
+
+    html[data-theme="aurora"] {
+      --bg: #080b16;
+      --surface: #10152a;
+      --surface-2: #171e39;
+      --text: #f1f4ff;
+      --muted: #aeb7d5;
+      --primary: #9d8cff;
+      --border: rgba(157,140,255,.18);
+      --radius: 22px;
+      --shadow: 0 15px 50px rgba(0,0,0,.35);
+    }
+
+    html[data-theme="minimal"] {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-2: #f5f5f5;
+      --text: #111111;
+      --muted: #666666;
+      --primary: #111111;
+      --border: #e5e5e5;
+      --radius: 12px;
+      --shadow: none;
+    }
+  </style>
+
+  <!--
+    OxygeNMedia - Tema Inline
+    Se ejecuta de forma síncrona para evitar parpadeos visuales.
+  -->
+  <script>
+    (() => {
+      const temas = [
+        "terminal",
+        "neobrutal",
+        "editorial",
+        "aurora",
+        "minimal"
+      ];
+
+      const temaGuardado =
+        localStorage.getItem("oxygenmedia_tema") || "terminal";
+
+      const tema = temas.includes(temaGuardado)
+        ? temaGuardado
+        : "terminal";
+
+      document.documentElement.dataset.theme = tema;
+    })();
+  </script>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+
+      <a href="/" class="brand">
+        OxygeNMedia <span>Privacidad</span>
+      </a>
+
+      <a href="/" class="back">
+        ← Volver
+      </a>
+
+    </div>
+  </header>
+
+  <main>
+
+    <div class="hero">
+
+      <div class="eyebrow">
+        Documento de privacidad
+      </div>
+
+      <h1>Política de Privacidad</h1>
+
+      <p class="intro">
+        Esta política explica qué información puede recopilar
+        OxygeNMedia, para qué se utiliza y qué medidas aplicamos
+        para protegerla.
+      </p>
+
+      <div class="updated">
+        Última actualización: 4 de septiembre de 2026
+      </div>
+
+    </div>
+
+    <div class="content">
+
+      <section>
+        <h2>1. Introducción</h2>
+
+        <p>
+          En OxygeNMedia nos tomamos la privacidad de los usuarios
+          en serio. Esta Política de Privacidad describe cómo se
+          recopila, utiliza, almacena y protege la información
+          relacionada con el uso de nuestra plataforma.
+        </p>
+
+        <p>
+          Al utilizar OxygeNMedia, aceptas las prácticas descritas
+          en esta política.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>2. Información que podemos recopilar</h2>
+
+        <p>
+          Dependiendo de las funciones que utilices, OxygeNMedia
+          puede recopilar diferentes tipos de información.
+        </p>
+
+        <h3>Información de cuenta</h3>
+
+        <ul>
+          <li>Nombre de usuario.</li>
+          <li>Dirección de correo electrónico.</li>
+          <li>Información necesaria para crear y administrar la cuenta.</li>
+          <li>Imagen de perfil, cuando el usuario decida proporcionar una.</li>
+        </ul>
+
+        <h3>Información de perfil</h3>
+
+        <ul>
+          <li>Biografía.</li>
+          <li>Preferencias configuradas por el usuario.</li>
+          <li>Contenido que el usuario decida publicar.</li>
+          <li>Información relacionada con música compartida.</li>
+        </ul>
+
+        <h3>Información técnica</h3>
+
+        <ul>
+          <li>Dirección IP.</li>
+          <li>Tipo de dispositivo.</li>
+          <li>Navegador y sistema operativo.</li>
+          <li>Información básica de conexión.</li>
+          <li>Registros técnicos relacionados con errores y seguridad.</li>
+        </ul>
+      </section>
+
+
+      <section>
+        <h2>3. Información que decides hacer pública</h2>
+
+        <p>
+          Algunas funciones de OxygeNMedia permiten publicar
+          información visible para otros usuarios.
+        </p>
+
+        <p>
+          Esto puede incluir tu nombre de usuario, fotografía de
+          perfil, biografía, publicaciones, música compartida,
+          preferencias u otra información que decidas publicar.
+        </p>
+
+        <div class="notice">
+          <strong>Importante:</strong>
+          Antes de publicar información, asegúrate de que estás
+          cómodo con que otros usuarios puedan verla.
+        </div>
+      </section>
+
+
+      <section>
+        <h2>4. Cómo utilizamos la información</h2>
+
+        <p>
+          La información recopilada puede utilizarse para:
+        </p>
+
+        <ul>
+          <li>Crear y administrar cuentas.</li>
+          <li>Proporcionar las funciones de OxygeNMedia.</li>
+          <li>Personalizar determinadas partes de la experiencia.</li>
+          <li>Proteger la plataforma contra abuso y fraude.</li>
+          <li>Detectar problemas técnicos y errores.</li>
+          <li>Mantener la seguridad del servicio.</li>
+          <li>Responder solicitudes de soporte.</li>
+          <li>Mejorar el funcionamiento de la plataforma.</li>
+        </ul>
+      </section>
+
+
+      <section>
+        <h2>5. Contraseñas y seguridad de cuentas</h2>
+
+        <p>
+          Las contraseñas de los usuarios deben mantenerse
+          protegidas mediante los mecanismos de autenticación
+          utilizados por la plataforma.
+        </p>
+
+        <p>
+          OxygeNMedia no solicita que los usuarios compartan sus
+          contraseñas mediante mensajes, publicaciones o solicitudes
+          de soporte no autorizadas.
+        </p>
+
+        <p>
+          El usuario también es responsable de mantener seguras sus
+          credenciales y de informar sobre accesos sospechosos.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>6. Servicios de terceros</h2>
+
+        <p>
+          OxygeNMedia puede utilizar proveedores externos para
+          proporcionar determinadas funciones de la plataforma.
+        </p>
+
+        <p>
+          Estos servicios pueden incluir proveedores de
+          autenticación, almacenamiento, infraestructura,
+          análisis, música u otras tecnologías necesarias
+          para operar el servicio.
+        </p>
+
+        <p>
+          Los proveedores externos pueden procesar determinada
+          información de acuerdo con sus propias políticas de
+          privacidad y condiciones.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>7. Servicios relacionados con música</h2>
+
+        <p>
+          OxygeNMedia puede integrarse con plataformas musicales
+          externas para proporcionar funciones relacionadas con
+          canciones, artistas, álbumes u otros datos musicales.
+        </p>
+
+        <p>
+          La información proporcionada por estos servicios puede
+          estar sujeta a las políticas y condiciones de sus
+          respectivos proveedores.
+        </p>
+
+        <p>
+          OxygeNMedia no reclama propiedad sobre contenido musical
+          perteneciente a terceros.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>8. Cookies y almacenamiento local</h2>
+
+        <p>
+          OxygeNMedia puede utilizar cookies, almacenamiento local
+          del navegador u tecnologías similares para mantener
+          determinadas preferencias y permitir el funcionamiento
+          de ciertas características.
+        </p>
+
+        <p>
+          Por ejemplo, la plataforma puede almacenar localmente
+          preferencias como el tema visual seleccionado.
+        </p>
+
+        <p>
+          Puedes administrar o eliminar datos almacenados
+          localmente mediante las opciones de tu navegador.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>9. Información utilizada para seguridad</h2>
+
+        <p>
+          Podemos recopilar y conservar determinados registros
+          técnicos para detectar comportamientos abusivos,
+          proteger las cuentas y mantener la seguridad de
+          OxygeNMedia.
+        </p>
+
+        <p>
+          Estos registros pueden incluir información técnica como
+          direcciones IP, marcas de tiempo, solicitudes y eventos
+          relacionados con seguridad.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>10. Compartición de información</h2>
+
+        <p>
+          OxygeNMedia no tiene como objetivo vender información
+          personal de los usuarios.
+        </p>
+
+        <p>
+          La información puede compartirse cuando sea necesario
+          para proporcionar el servicio, cumplir obligaciones
+          legales, proteger la seguridad de la plataforma o
+          responder a solicitudes legalmente válidas.
+        </p>
+
+        <p>
+          La información que publiques voluntariamente mediante
+          funciones públicas puede ser visible para otros usuarios.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>11. Conservación de información</h2>
+
+        <p>
+          La información puede conservarse durante el tiempo
+          necesario para proporcionar los servicios, mantener
+          la seguridad, cumplir obligaciones legales o resolver
+          disputas.
+        </p>
+
+        <p>
+          Los períodos de conservación pueden variar dependiendo
+          del tipo de información y de la finalidad para la que
+          fue recopilada.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>12. Eliminación de cuenta</h2>
+
+        <p>
+          Cuando OxygeNMedia proporcione una función para eliminar
+          una cuenta, el usuario podrá utilizarla siguiendo las
+          instrucciones disponibles en la plataforma.
+        </p>
+
+        <p>
+          La eliminación de una cuenta puede no provocar la
+          eliminación inmediata de toda la información cuando
+          determinados datos deban conservarse por motivos legales,
+          de seguridad o técnicos.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>13. Privacidad de menores</h2>
+
+        <p>
+          OxygeNMedia no pretende recopilar deliberadamente
+          información personal de menores cuando dicha recopilación
+          no esté permitida por la legislación aplicable.
+        </p>
+
+        <p>
+          Si consideras que se ha recopilado información de un
+          menor de manera inapropiada, puedes comunicarlo mediante
+          los canales oficiales de contacto de la plataforma.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>14. Seguridad</h2>
+
+        <p>
+          Aplicamos medidas técnicas y organizativas razonables
+          destinadas a proteger la información frente a accesos,
+          modificaciones, divulgaciones o destrucciones no
+          autorizadas.
+        </p>
+
+        <p>
+          Sin embargo, ningún sistema conectado a Internet puede
+          garantizar una seguridad absoluta.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>15. Enlaces externos</h2>
+
+        <p>
+          OxygeNMedia puede contener enlaces hacia sitios o
+          servicios externos.
+        </p>
+
+        <p>
+          No controlamos las prácticas de privacidad de dichos
+          sitios. Recomendamos revisar sus respectivas políticas
+          antes de proporcionarles información personal.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>16. Derechos del usuario</h2>
+
+        <p>
+          Dependiendo de la legislación aplicable, puedes tener
+          determinados derechos relacionados con tu información
+          personal.
+        </p>
+
+        <p>
+          Estos pueden incluir el derecho a solicitar acceso,
+          corrección, eliminación, restricción u otra gestión de
+          determinados datos personales.
+        </p>
+
+        <p>
+          Las solicitudes estarán sujetas a las limitaciones y
+          requisitos establecidos por la legislación aplicable.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>17. Cambios en esta política</h2>
+
+        <p>
+          Esta Política de Privacidad puede actualizarse cuando
+          sea necesario para reflejar cambios en OxygeNMedia,
+          nuevas funciones, proveedores, requisitos legales o
+          medidas de seguridad.
+        </p>
+
+        <p>
+          La fecha indicada al principio de esta página muestra
+          cuándo fue realizada la última actualización.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>18. Contacto</h2>
+
+        <p>
+          Si tienes preguntas, solicitudes o inquietudes relacionadas
+          con esta Política de Privacidad o con el tratamiento de
+          información dentro de OxygeNMedia, puedes utilizar los
+          canales oficiales de contacto disponibles en la plataforma.
+        </p>
+      </section>
+
+
+      <section>
+        <h2>19. Aceptación</h2>
+
+        <p>
+          Al utilizar OxygeNMedia después de la publicación de esta
+          Política de Privacidad, reconoces haber tenido la
+          oportunidad de consultar su contenido.
+        </p>
+
+        <p>
+          El uso de la plataforma también está sujeto a los
+          <a href="/terminos">Términos y Condiciones</a>.
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+
+  <footer class="footer">
+
+    <p>
+      © 2026 OxygeNMedia. Todos los derechos reservados.
+    </p>
+
+    <p>
+      <a href="/">Inicio</a>
+      ·
+      <a href="/terminos">Términos y Condiciones</a>
+      ·
+      <a href="/privacidad">Política de Privacidad</a>
+    </p>
+
+  </footer>
+
+</body>
+</html>

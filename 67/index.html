@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>67™ — OxygeNMedia</title>
+<meta name="description" content="Sistema de monitorización de un huevo espacial. Genera OX3 haciendo clic.">
+<script src="/tema-inline.js"></script>
+<script src="/fuente-inline.js"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%9A%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-chaos="off">
+
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+
+<div id="alert-overlay" class="alert-overlay" aria-live="assertive"></div>
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🥚</span>
+      <div class="brand-text">
+        <h1>STAR EGG<span class="tm">™</span></h1>
+        <p class="brand-sub">SPECIMEN CONTROL SYSTEM — OXYGENMEDIA</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span class="status-label">SYSTEM ONLINE</span>
+      <a href="/" class="ghost-btn" style="text-decoration:none;">← Volver al sitio</a>
+      <button id="sound-toggle" class="ghost-btn" type="button" aria-pressed="false">
+        <span id="sound-icon" aria-hidden="true">🔇</span> SOUND: OFF
+      </button>
+    </div>
+  </div>
+  <p class="mission-line">MISSION OBJECTIVE: <span>Determine what is inside the egg.</span></p>
+  <p class="session-note" id="session-note">Cargando sesión...</p>
+</header>
+
+<main class="layout" id="main-layout">
+
+  <!-- LEFT PANELS -->
+  <section class="panel-column" aria-label="Egg status panels">
+    <div class="panel" id="panel-status">
+      <h2 class="panel-title">EGG STATUS</h2>
+      <dl class="data-list">
+        <div class="data-row"><dt>STATUS</dt><dd class="ok" id="stat-online">ONLINE</dd></div>
+        <div class="data-row"><dt>CORE TEMPERATURE</dt><dd id="stat-temp">37.2°C</dd></div>
+        <div class="data-row"><dt>EGG INTEGRITY</dt><dd id="stat-integrity">99.8%</dd></div>
+        <div class="data-row"><dt>COSMIC EXPOSURE</dt><dd id="stat-cosmic">12.4%</dd></div>
+        <div class="data-row">
+          <dt>UNKNOWN ENERGY</dt>
+          <dd><div class="mini-bar"><span id="stat-unknown-bar" style="width:60%"></span></div></dd>
+        </div>
+        <div class="data-row"><dt>THREAT LEVEL</dt><dd id="stat-threat">????</dd></div>
+        <div class="data-row"><dt>SPECIMEN</dt><dd>STAR-EGG-001</dd></div>
+        <div class="data-row"><dt>ORIGIN</dt><dd>UNKNOWN</dd></div>
+        <div class="data-row"><dt>CONTENTS</dt><dd>CLASSIFIED</dd></div>
+      </dl>
+    </div>
+
+    <div class="panel" id="panel-experiment">
+      <h2 class="panel-title">EXPERIMENT STATUS</h2>
+      <p class="experiment-message" id="experiment-message">Monitoring specimen...</p>
+      <p class="hidden-phrase" id="hidden-phrase" aria-live="off">Scientific accuracy: questionable.</p>
+    </div>
+  </section>
+
+  <!-- CENTER STAGE -->
+  <section class="egg-stage" aria-label="Egg interaction area">
+
+    <div class="energy-readout">
+      <div class="energy-header">
+        <span>EGG ENERGY</span>
+        <span id="energy-value">0</span>
+      </div>
+      <div class="energy-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="energy-bar-wrap">
+        <div class="energy-bar-fill" id="energy-bar-fill"></div>
+      </div>
+      <div class="energy-sub">
+        <span>CLICKS <strong id="click-count">0</strong></span>
+        <span>🥚 OX3 <strong id="ox3-balance">0</strong></span>
+      </div>
+    </div>
+
+    <div class="egg-wrap">
+      <div class="egg-glow" aria-hidden="true"></div>
+      <button type="button" id="egg-button" class="egg-button" aria-label="The Star Egg. Tap to interact.">
+        <svg id="egg-svg" viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <radialGradient id="eggGrad" cx="38%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="35%" stop-color="#e9edf3"/>
+              <stop offset="70%" stop-color="#b9c2d0"/>
+              <stop offset="100%" stop-color="#7c8598"/>
+            </radialGradient>
+            <radialGradient id="eggShine" cx="32%" cy="22%" r="18%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="eggCrack" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#5ff0d6"/>
+              <stop offset="100%" stop-color="#4c8dff"/>
+            </linearGradient>
+            <filter id="eggShadow" x="-40%" y="-20%" width="180%" height="160%">
+              <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity="0.45"/>
+            </filter>
+          </defs>
+          <g id="egg-shape-group" filter="url(#eggShadow)">
+            <path id="egg-path" d="M150,10 C230,10 275,140 275,230 C275,320 220,370 150,370 C80,370 25,320 25,230 C25,140 70,10 150,10 Z" fill="url(#eggGrad)"/>
+            <ellipse cx="105" cy="95" rx="42" ry="60" fill="url(#eggShine)"/>
+            <g id="egg-cracks" opacity="0.35" stroke="url(#eggCrack)" stroke-width="2.2" fill="none" stroke-linecap="round">
+              <path d="M120,120 L138,150 L128,180 L150,205"/>
+              <path d="M180,140 L168,165 L182,185"/>
+            </g>
+          </g>
+        </svg>
+      </button>
+      <div class="float-layer" id="float-layer" aria-hidden="true"></div>
+    </div>
+
+    <div class="reward-progress">
+      <div class="reward-progress-head">
+        <span>NEXT REWARD</span>
+        <span id="reward-next-label">100 CLICKS</span>
+      </div>
+      <div class="energy-bar-track"><div class="energy-bar-fill" id="reward-bar-fill"></div></div>
+      <div class="reward-progress-sub" id="reward-next-amount">+1 OX3</div>
+    </div>
+
+    <div class="egg-controls">
+      <button type="button" id="danger-button" class="danger-button">DO NOT PRESS</button>
+
+      <div class="chaos-box" id="chaos-box">
+        <div class="chaos-head">
+          <span>CHAOS MODE</span>
+          <span id="chaos-state" class="chaos-state locked">🔒 LOCKED</span>
+        </div>
+        <p class="chaos-hint" id="chaos-hint">Reach 100 clicks.</p>
+        <button type="button" id="chaos-button" class="chaos-button" disabled>ACTIVATE</button>
+      </div>
+
+      <button type="button" id="reset-button" class="reset-button">RESET VISUAL PROGRESS</button>
+    </div>
+  </section>
+
+  <!-- RIGHT PANELS -->
+  <section class="panel-column" aria-label="Egg analysis panels">
+    <div class="panel" id="panel-analysis">
+      <h2 class="panel-title">EGG ANALYSIS</h2>
+      <dl class="data-list two-col">
+        <div class="data-row"><dt>MASS</dt><dd>unknown</dd></div>
+        <div class="data-row"><dt>DENSITY</dt><dd>egg</dd></div>
+        <div class="data-row"><dt>AGE</dt><dd>probably old</dd></div>
+        <div class="data-row"><dt>COMPOSITION</dt><dd>classified</dd></div>
+        <div class="data-row"><dt>POWER SOURCE</dt><dd>also classified</dd></div>
+        <div class="data-row"><dt>INTELLIGENCE</dt><dd>suspicious</dd></div>
+        <div class="data-row"><dt>ANGER LEVEL</dt><dd id="stat-anger">low</dd></div>
+      </dl>
+      <div class="chart-wrap">
+        <div class="chart-label">EGG ACTIVITY</div>
+        <canvas id="activity-canvas" height="90"></canvas>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-achievements">
+      <h2 class="panel-title">ACHIEVEMENTS</h2>
+      <ul class="achv-list" id="achv-list"></ul>
+    </div>
+
+    <div class="panel" id="panel-shop">
+      <h2 class="panel-title">STAR EGG SHOP</h2>
+      <p class="shop-sub">Boosters se compran con ENERGY. Se quedan para siempre.</p>
+      <div class="booster-list" id="booster-list"></div>
+
+      <div class="exchange-box">
+        <div class="exchange-head">🥚 Canjear ENERGY por OX3</div>
+        <p class="exchange-rate">100 ENERGY = 2 OX3</p>
+        <div class="exchange-row">
+          <input type="number" id="exchange-input" min="100" step="100" placeholder="100">
+          <button type="button" id="exchange-button">CANJEAR</button>
+        </div>
+        <p class="exchange-note" id="exchange-note"></p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p class="footer-title">STAR EGG™</p>
+  <p class="footer-sub">An unnecessarily advanced egg monitoring system.</p>
+  <p class="footer-note">Experimento de OxygeNMedia. Genera OX3, una moneda independiente de Ox2 — sin conversión entre ambas. Internal note: it's still just an egg.</p>
+</footer>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
