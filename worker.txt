@@ -1,52 +1,74 @@
 // worker-subir-imagen.js
 // ============================================================================
 // CLOUDFLARE WORKER — sube imágenes a R2 en nombre de un usuario autenticado
-// de OxygeNMedia (Firebase Auth), sin exponer ninguna credencial de R2 en el
-// navegador. El binding nativo de R2 (ver más abajo) hace innecesario incluso
-// el Access Key/Secret de R2 — el Worker habla con el bucket directamente.
+// (Firebase Auth), sin exponer ninguna credencial de R2 en el navegador.
+// El binding nativo de R2 hace innecesario el Access Key/Secret de R2 — el
+// Worker habla con el bucket directamente.
+//
+// AHORA SIRVE DOS APPS EN EL MISMO WORKER (mismo bucket, carpetas separadas):
+//   - OxygeNMedia  (proyecto Firebase: workwebschool-5646f)
+//   - NovaStore    (proyecto Firebase: nova-store-ink)
+// El comportamiento de OxygeNMedia queda exactamente igual que antes; solo se
+// añadió una capa de configuración por app para no duplicar el Worker entero.
 //
 // SIN DEPENDENCIAS NPM: la verificación del ID Token de Firebase se hace con
-// la Web Crypto API nativa de Cloudflare Workers (crypto.subtle), sin
-// necesitar instalar "jose" ni ninguna otra librería — así funciona pegando
-// el código directo en el editor simple del dashboard, sin usar Wrangler ni
-// terminal.
+// la Web Crypto API nativa de Cloudflare Workers (crypto.subtle).
 //
 // FLUJO:
-// 1. El navegador comprime la imagen a WebP (<canvas>, ver subir-imagen.js del
-//    frontend) y la manda aquí junto con su ID Token de Firebase.
-// 2. Este Worker verifica el ID Token contra el JWKS público de Google.
-// 3. Verifica que el archivo sea realmente WebP y pese ≤ 1 MB.
-// 4. Lo sube a R2 bajo una ruta organizada por tipo y UID:
-//      perfiles/{uid}/{timestamp}.webp
-//      posts/{uid}/{timestamp}.webp
+// 1. El navegador manda la imagen aquí junto con su ID Token de Firebase y
+//    un header X-App indicando de qué app viene ("oxygenmedia" | "novastore").
+// 2. Este Worker verifica el ID Token contra el JWKS público de Google, usando
+//    el FIREBASE_PROJECT_ID que corresponda a esa app.
+// 3. Verifica que el archivo sea del tipo/tamaño permitido para esa app.
+// 4. Lo sube a R2 bajo una ruta organizada por app y tipo:
+//      OxygeNMedia -> perfiles/{uid}/{timestamp}.webp, posts/{uid}/{timestamp}.webp, ...
+//      NovaStore   -> productos-novastore/{uid}/{timestamp}.{ext}
 // 5. Devuelve la URL pública final.
 //
 // CÓMO DESPLEGARLO (editor simple del dashboard, sin terminal):
 // 1. En tu Worker, vista "Edit code" (</>).
 // 2. Reemplaza TODO el contenido por este archivo. Guarda/Deploy.
-// 3. Dashboard del Worker → Settings → Bindings → Add → "R2 Bucket":
+// 3. Dashboard del Worker → Settings → Bindings → confirma que sigue el mismo
+//    binding R2 que ya tenías:
 //      - Variable name: BUCKET_IMAGENES
-//      - Bucket: tu bucket (ej. oxygenmedia-imagenes)
-//    Esto NO requiere ningún Access Key/Secret — el binding ya autoriza al
-//    Worker a leer/escribir en el bucket directamente.
-// 4. Dashboard del Worker → Settings → Variables and Secrets → Add:
-//      - FIREBASE_PROJECT_ID (tipo normal) = workwebschool-5646f
-// 5. Si conectaste un dominio público al bucket (ej. img.oxygenmedia.online),
-//    ponlo en URL_PUBLICA_BASE abajo. Si no, usa la URL pública que R2 te dé
-//    en Settings → Public Access del bucket.
-// 6. Deploy. Copia la URL del Worker y pégala en SUBIR_IMAGEN_ENDPOINT dentro
-//    de subir-imagen.js (frontend).
+//      - Bucket: oxygenmedia-imagenes
+// 4. Dashboard del Worker → Settings → Variables and Secrets → agrega (además
+//    de FIREBASE_PROJECT_ID que ya tenías, que ahora es el de OxygeNMedia):
+//      - FIREBASE_PROJECT_ID_NOVASTORE (tipo normal) = nova-store-ink
+// 5. URL_PUBLICA_BASE sigue igual (mismo bucket para ambas apps).
+// 6. Deploy. En NovaStore, admin.html debe mandar el header X-App: novastore
+//    (ver nota al final de este archivo con el snippet de frontend).
 // ============================================================================
 
-// Cambia esto por tu dominio público real de R2 (Settings → Public Access
-// del bucket, o el subdominio custom que hayas conectado).
 const URL_PUBLICA_BASE = "https://pub-71d10c040e384f0ebac013dfb1faa046.r2.dev";
 
-const MAX_BYTES = 1 * 1024 * 1024; // 1 MB, ya en WebP
-const TIPOS_PERMITIDOS = new Set(["perfiles", "posts", "recursos", "banners"]);
+// ---------- Configuración por app ----------
+// Cada app define: su project id (de dónde sale el FIREBASE_PROJECT_ID a usar),
+// el origen permitido (CORS), el tamaño máximo de archivo, y los tipos/rutas
+// válidos que puede subir.
+const CONFIG_APPS = {
+  oxygenmedia: {
+    origenPermitido: "https://oxygenmedia.online",
+    maxBytes: 1 * 1024 * 1024, // 1 MB, ya en WebP
+    tiposPermitidos: new Set(["perfiles", "posts", "recursos", "banners"]),
+    contentTypesPermitidos: new Set(["image/webp"]),
+    // ruta: {tipo}/{uid}/{timestamp}.webp
+    construirRuta: (tipo, uid) => `${tipo}/${uid}/${Date.now()}.webp`,
+  },
+  novastore: {
+    origenPermitido: "https://novastore.ink",
+    maxBytes: 5 * 1024 * 1024, // 5 MB — fotos de producto, no tan comprimidas como perfiles
+    tiposPermitidos: new Set(["productos"]),
+    contentTypesPermitidos: new Set(["image/webp", "image/jpeg", "image/png"]),
+    // ruta: productos-novastore/{uid}/{timestamp}.{ext}
+    construirRuta: (tipo, uid, contentType) => {
+      const ext = contentType === "image/png" ? "png" : contentType === "image/jpeg" ? "jpg" : "webp";
+      return `productos-novastore/${uid}/${Date.now()}.${ext}`;
+    },
+  },
+};
 
-// Cooldown básico anti-spam por usuario (en memoria del Worker — suficiente
-// disuasión para este volumen, no es un rate-limiter distribuido real).
+// Cooldown básico anti-spam por usuario (en memoria del Worker).
 const ultimaSubidaPorUid = new Map();
 const COOLDOWN_MS = 3000;
 
@@ -60,8 +82,8 @@ async function obtenerJwksFirebase() {
   const resp = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
   if (!resp.ok) throw new Error("No se pudieron obtener las claves públicas de Google.");
   const data = await resp.json();
-  cacheJwks = data.keys; // array de JWK
-  cacheJwksExpira = Date.now() + 60 * 60 * 1000; // recachea cada hora
+  cacheJwks = data.keys;
+  cacheJwksExpira = Date.now() + 60 * 60 * 1000;
   return cacheJwks;
 }
 
@@ -72,8 +94,6 @@ function base64UrlADecodificado(str) {
   return Uint8Array.from(binario, c => c.charCodeAt(0));
 }
 
-// Verifica firma (RS256 vía Web Crypto nativa), expiración, emisor y
-// audiencia de un ID Token de Firebase Auth. Devuelve el UID si es válido.
 async function verificarIdTokenFirebase(idToken, projectId) {
   const partes = idToken.split(".");
   if (partes.length !== 3) throw new Error("Formato de token inválido.");
@@ -106,75 +126,120 @@ async function verificarIdTokenFirebase(idToken, projectId) {
   const valido = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", clavePublica, firma, datosFirmados);
   if (!valido) throw new Error("Firma del token inválida.");
 
-  return payload.sub; // el UID de Firebase
+  return payload.sub;
 }
 
 // ============ WORKER ============
 
 export default {
   async fetch(request, env) {
-    const origenPermitido = "https://oxygenmedia.online";
+    // Determina qué app está llamando. Por compatibilidad, si no manda
+    // X-App, se asume "oxygenmedia" (comportamiento previo intacto).
+    const appId = (request.headers.get("X-App") || "oxygenmedia").toLowerCase();
+    const configApp = CONFIG_APPS[appId];
+
+    if (!configApp) {
+      return jsonError("App desconocida.", 400, { "Access-Control-Allow-Origin": "*" });
+    }
+
     const headersCORS = {
-      "Access-Control-Allow-Origin": origenPermitido,
+      "Access-Control-Allow-Origin": configApp.origenPermitido,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-Firebase-Token, X-Tipo-Imagen"
+      "Access-Control-Allow-Headers": "Content-Type, X-Firebase-Token, X-Tipo-Imagen, X-App",
     };
 
     if (request.method === "OPTIONS") return new Response(null, { headers: headersCORS });
     if (request.method !== "POST") return jsonError("Método no permitido.", 405, headersCORS);
 
     const idToken = request.headers.get("X-Firebase-Token");
-    const tipo = request.headers.get("X-Tipo-Imagen"); // "perfiles" | "posts" | "recursos"
+    const tipo = request.headers.get("X-Tipo-Imagen");
 
     if (!idToken) return jsonError("Falta el token de sesión.", 401, headersCORS);
-    if (!tipo || !TIPOS_PERMITIDOS.has(tipo)) return jsonError("Tipo de imagen inválido.", 400, headersCORS);
+    if (!tipo || !configApp.tiposPermitidos.has(tipo)) {
+      return jsonError("Tipo de imagen inválido.", 400, headersCORS);
+    }
+
+    // Elige el project id de Firebase según la app.
+    const projectId = appId === "novastore" ? env.FIREBASE_PROJECT_ID_NOVASTORE : env.FIREBASE_PROJECT_ID;
+    if (!projectId) {
+      return jsonError("El Worker no tiene configurado el proyecto de Firebase para esta app.", 500, headersCORS);
+    }
 
     let uid;
     try {
-      uid = await verificarIdTokenFirebase(idToken, env.FIREBASE_PROJECT_ID);
+      uid = await verificarIdTokenFirebase(idToken, projectId);
     } catch (err) {
       return jsonError("Sesión inválida o expirada: " + err.message, 401, headersCORS);
     }
 
+    const claveCooldown = `${appId}:${uid}`;
     const ahora = Date.now();
-    const ultima = ultimaSubidaPorUid.get(uid) || 0;
+    const ultima = ultimaSubidaPorUid.get(claveCooldown) || 0;
     if (ahora - ultima < COOLDOWN_MS) {
       return jsonError("Espera un momento antes de subir otra imagen.", 429, headersCORS);
     }
 
     const bytes = await request.arrayBuffer();
     if (bytes.byteLength === 0) return jsonError("No se recibió ningún archivo.", 400, headersCORS);
-    if (bytes.byteLength > MAX_BYTES) {
-      return jsonError(`La imagen pesa demasiado (máximo 1 MB, esta pesa ${(bytes.byteLength / 1024 / 1024).toFixed(2)} MB).`, 400, headersCORS);
+    if (bytes.byteLength > configApp.maxBytes) {
+      const maxMB = (configApp.maxBytes / 1024 / 1024).toFixed(1);
+      return jsonError(`La imagen pesa demasiado (máximo ${maxMB} MB, esta pesa ${(bytes.byteLength / 1024 / 1024).toFixed(2)} MB).`, 400, headersCORS);
     }
 
     const contentType = request.headers.get("Content-Type") || "";
-    if (contentType !== "image/webp") {
-      return jsonError("Solo se aceptan imágenes en formato WebP.", 400, headersCORS);
+    if (!configApp.contentTypesPermitidos.has(contentType)) {
+      return jsonError("Formato de imagen no permitido para esta app.", 400, headersCORS);
     }
 
-    const nombreArchivo = `${tipo}/${uid}/${Date.now()}.webp`;
+    const nombreArchivo = configApp.construirRuta(tipo, uid, contentType);
     try {
       await env.BUCKET_IMAGENES.put(nombreArchivo, bytes, {
-        httpMetadata: { contentType: "image/webp" }
+        httpMetadata: { contentType },
       });
     } catch (err) {
       return jsonError("No se pudo guardar la imagen: " + err.message, 502, headersCORS);
     }
 
-    ultimaSubidaPorUid.set(uid, ahora);
+    ultimaSubidaPorUid.set(claveCooldown, ahora);
 
     const urlPublica = `${URL_PUBLICA_BASE}/${nombreArchivo}`;
     return new Response(JSON.stringify({ url: urlPublica }), {
-      headers: { ...headersCORS, "Content-Type": "application/json" }
+      headers: { ...headersCORS, "Content-Type": "application/json" },
     });
-  }
+  },
 };
 
 function jsonError(mensaje, status, headersCORS) {
   return new Response(JSON.stringify({ error: mensaje }), {
     status,
-    headers: { ...headersCORS, "Content-Type": "application/json" }
+    headers: { ...headersCORS, "Content-Type": "application/json" },
   });
 }
 
+// ============================================================================
+// SNIPPET DE FRONTEND PARA NOVASTORE (admin.html) — reemplaza la función
+// uploadImageToR2 actual por esta, que usa este Worker en vez de presigned URLs:
+//
+//   async function uploadImageToR2(file, idToken) {
+//     const res = await fetch("https://TU-WORKER.workers.dev", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": file.type,
+//         "X-Firebase-Token": idToken,
+//         "X-Tipo-Imagen": "productos",
+//         "X-App": "novastore",
+//       },
+//       body: file,
+//     });
+//     if (!res.ok) {
+//       const err = await res.json().catch(() => ({}));
+//       throw new Error(err.error || "No se pudo subir la imagen.");
+//     }
+//     const { url } = await res.json();
+//     return url;
+//   }
+//
+// idToken se obtiene así, justo antes de llamar uploadImageToR2, usando el
+// usuario ya logueado (auth.currentUser), disponible en admin.html:
+//   const idToken = await auth.currentUser.getIdToken();
+// ============================================================================
