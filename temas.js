@@ -1,9 +1,9 @@
 // temas.js
 // "Temas" con nombre propio, creados por usuarios. Un tema es, por dentro, el
-// mismo hashtag que el muro ya sabÃ­a filtrar (misma colecciÃ³n "publicaciones",
-// mismo campo "hashtags") â€” esto solo le pone un registro con nombre, creador
+// mismo hashtag que el muro ya sabía filtrar (misma colección "publicaciones",
+// mismo campo "hashtags") — esto solo le pone un registro con nombre, creador
 // y contador encima, para poder crearlos y listarlos aunque nadie haya
-// publicado ahÃ­ todavÃ­a.
+// publicado ahí todavía.
 
 import { db } from "./firebase-config.js";
 import {
@@ -11,19 +11,19 @@ import {
   collection, query, orderBy, limit, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
-// Mismo criterio de normalizaciÃ³n que ya usa muro.js para extraer hashtags del texto.
+// Mismo criterio de normalización que ya usa muro.js para extraer hashtags del texto.
 export function normalizarSlugTema(nombre) {
   return (nombre || "")
     .trim()
     .toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
     .replace(/\s+/g, "")
-    .replace(/[^\wÃ¡Ã©Ã­Ã³ÃºÃ±]/gi, "");
+    .replace(/[^\wáéíóúñ]/gi, "");
 }
 
 /**
  * Crea un tema nuevo. El slug (nombre normalizado) es el ID del documento,
- * asÃ­ que es imposible crear dos temas con el mismo nombre â€” el segundo
+ * así que es imposible crear dos temas con el mismo nombre — el segundo
  * intento simplemente falla al crear (igual que con las tarjetas de regalo).
  */
 export async function crearTema(creadorId, creadorNombre, nombre, descripcion) {
@@ -54,13 +54,13 @@ export async function obtenerTema(slug) {
   return snap.exists() ? { slug, ...snap.data() } : null;
 }
 
-/** Temas mÃ¡s recientes o mÃ¡s activos, para mostrar en la barra de descubrimiento. */
+/** Temas más recientes o más activos, para mostrar en la barra de descubrimiento. */
 export async function listarTemas(cantidad = 30) {
   const snap = await getDocs(query(collection(db, "temas"), orderBy("publicacionesCount", "desc"), limit(cantidad)));
   return snap.docs.map(d => ({ slug: d.id, ...d.data() }));
 }
 
-/** BÃºsqueda simple por nombre, para el autocompletado al publicar. */
+/** Búsqueda simple por nombre, para el autocompletado al publicar. */
 export async function buscarTemas(texto) {
   const t = texto.trim().toLowerCase();
   if (t.length < 1) return [];
