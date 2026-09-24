@@ -10,7 +10,7 @@ import {
   obtenerComentarios, agregarComentario, borrarComentario,
   repostearPublicacion, buscarPublicaciones
 } from "./muro.js";
-import { crearTema, listarTemas, buscarTemas } from "./temas.js";
+import { crearTema, listarTemas, buscarTemas } from "./muro-temas.js";
 import { insigniaVerificado } from "./verificados.js";
 import { crearReporte, TIPO_OBJETIVO, MOTIVOS_POR_TIPO } from "./reportes.js";
 import { iniciarAyudaImagen } from "./ayuda-imagen.js";
