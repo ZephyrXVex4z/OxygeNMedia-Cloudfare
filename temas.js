@@ -26,7 +26,7 @@
 import { db } from "./firebase-config.js";
 import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
-export const CATALOGO_TEMAS = [
+export const TEMAS = [
   {
     id: "terminal", nombre: "Terminal",
     vars: { "--bg": "#0A0E0A", "--card": "#0F1710", "--border": "#1F8C52", "--accent": "#3FFF8F", "--accent-hover": "#2FE07A", "--text": "#C9F5D8", "--text-dim": "#5C9C77", "--danger": "#FF5C5C", "--success": "#3FFF8F", "--warn": "#FFB627", "--radius": "2px", "--card-shadow": "none", "--font-weight-heading": "700", "--input-bg": "#050805" }
@@ -53,7 +53,7 @@ const TEMA_DEFAULT = "terminal";
 const CLAVE_CACHE_TEMA = "oxygenmedia_tema";
 
 export function obtenerTema(id) {
-  return CATALOGO_TEMAS.find(t => t.id === id) || CATALOGO_TEMAS[0];
+  return TEMAS.find(t => t.id === id) || TEMAS[0];
 }
 
 // Aplica el tema a :root (todas las variables de color de golpe) y refresca
@@ -67,13 +67,20 @@ export function aplicarTema(temaId) {
 
 // Último tema conocido (cache local, solo para evitar el flash antes de que
 // cargue el perfil real desde Firestore — ver tema-inline.js).
-export function obtenerTemaCache() {
+export function obtenerTemaGuardado() {
   try { return localStorage.getItem(CLAVE_CACHE_TEMA) || TEMA_DEFAULT; } catch { return TEMA_DEFAULT; }
 }
 
+// Alias por compatibilidad con el nombre que usé en mi primera reconstrucción.
+export const obtenerTemaCache = obtenerTemaGuardado;
+
 export function listarTemas() {
-  return CATALOGO_TEMAS;
+  return TEMAS;
 }
+
+// Alias por compatibilidad, por si algún archivo que no pude revisar todavía
+// sigue esperando el nombre anterior.
+export const CATALOGO_TEMAS = TEMAS;
 
 // Equipa un tema como el activo del usuario: lo guarda en su perfil (para que
 // viaje entre dispositivos) y lo aplica de inmediato.
