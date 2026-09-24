@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 import { crearNotificacion } from "./notificaciones.js";
 import { otorgarOxPorLike, otorgarOxPorPublicar } from "./recompensas.js";
-import { incrementarContadorTema } from "./temas.js";
+import { incrementarContadorTema } from "./muro-temas.js";
 
 // Extrae hashtags (#tema) y menciones (@usuario) de un texto, en minúsculas y sin símbolo
 function extraerHashtags(texto) {
