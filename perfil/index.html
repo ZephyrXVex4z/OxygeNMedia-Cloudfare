@@ -8,19 +8,11 @@
 <meta name="theme-color" content="#5b8def">
 <link rel="stylesheet" href="/efectos-perfil.css">
 <script src="/tema-inline.js"></script>
-
 <style>
   :root {
-    --bg: #0f1420;
-    --card: #1a2233;
-    --border: #2a3550;
-    --accent: #5b8def;
-    --accent-hover: #4a7ad9;
-    --text: #e8ecf5;
-    --text-dim: #8b96b0;
-    --success: #4caf7d;
-    --danger: #e35d5d;
-    --warn: #e0a941;
+    --bg: #0f1420; --card: #1a2233; --border: #2a3550; --accent: #5b8def;
+    --accent-hover: #4a7ad9; --text: #e8ecf5; --text-dim: #8b96b0;
+    --success: #4caf7d; --danger: #e35d5d; --warn: #e0a941;
     --radius: 14px;
     --card-shadow: none;
     --input-bg: #10182a;
@@ -28,1091 +20,284 @@
     --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-weight-heading: 700;
   }
-
-  * {
-    box-sizing: border-box;
-  }
-
+  * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: var(--font-body);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
+    background: var(--bg); color: var(--text); min-height: 100vh;
   }
-
   header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
   }
-
-  header h1 {
-    font-size: 17px;
-    margin: 0;
-  }
-
-  h1,
-  h2,
-  h3 {
-    font-family: var(--font-display);
-    font-weight: var(--font-weight-heading);
-  }
-
+  header h1 { font-size: 17px; margin: 0; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: var(--font-weight-heading); }
   button {
     font-family: var(--font-body);
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    cursor: pointer;
-    font-weight: 600;
+    background: var(--accent); color: white; border: none; padding: 10px 16px;
+    border-radius: var(--radius); font-size: 13px; cursor: pointer; font-weight: 600;
   }
-
-  button:hover {
-    background: var(--accent-hover);
-  }
-
-  button.secondary {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-  }
-
-  button.secondary:hover {
-    background: var(--card);
-  }
-
-  button.small {
-    padding: 5px 10px;
-    font-size: 12px;
-  }
-
-  .container {
-    max-width: 560px;
-    margin: 24px auto;
-    padding: 0 20px;
-  }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 22px;
-    margin-bottom: 16px;
-    position: relative;
-  }
-
-  /* =========================
-     AVATAR
-     ========================= */
+  button:hover { background: var(--accent-hover); }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  button.secondary:hover { background: var(--card); }
+  button.small { padding: 5px 10px; font-size: 12px; }
+  .container { max-width: 560px; margin: 24px auto; padding: 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 16px; position: relative; }
 
   .avatar-preview {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    font-weight: 700;
-    color: white;
-    border: 3px solid var(--card);
-    flex-shrink: 0;
+    width: 72px; height: 72px; border-radius: 50%; object-fit: contain;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 700; color: white;
+    border: 3px solid var(--card); flex-shrink: 0;
   }
-
-  /* =========================
-     BANNER
-     ========================= */
-
   .banner-header {
-    position: relative;
-    height: 130px;
-    border-radius: var(--radius) var(--radius) 0 0;
-
-    /*
-      IMPORTANTE:
-      Antes estaba en overflow:hidden y eso cortaba
-      la parte inferior del avatar.
-    */
-    overflow: visible;
-
-    margin: -28px -28px 0;
-
-    /*
-      Mantiene el banner por debajo del avatar.
-    */
-    z-index: 1;
+    position: relative; height: 130px; border-radius: var(--radius) var(--radius) 0 0;
+    overflow: hidden; margin: -28px -28px 0; /* se extiende hasta los bordes de .card */
   }
-
   .avatar-sobre-banner {
-    position: absolute;
-
-    /*
-      Lo mueve hacia afuera del banner.
-    */
-    left: 16px;
-    bottom: -36px;
-
-    /*
-      El avatar queda por encima del banner.
-    */
-    z-index: 10;
+    position: absolute; left: 16px; bottom: -18px;
   }
-
   .profile-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    text-align: left;
-
-    /*
-      Espacio suficiente para el avatar sobresaliente.
-    */
-    margin: 44px 0 8px;
-
-    position: relative;
-    z-index: 2;
+    display: flex; align-items: flex-start; gap: 14px; text-align: left;
+    margin: 24px 0 8px; /* espacio para que el avatar (que sobresale del banner) no tape el texto */
   }
-
-  .profile-header .info {
-    min-width: 0;
-  }
-
-  .profile-header h2 {
-    margin: 0 0 2px 0;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .profile-header .username {
-    color: var(--accent);
-    font-size: 14px;
-  }
-
-  .perfil-link-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 4px;
-    flex-wrap: wrap;
-  }
-
-  .perfil-link-row span {
-    font-size: 12.5px;
-    color: var(--text-dim);
-    word-break: break-all;
-  }
-
-  .link-copy-btn {
-    padding: 4px 10px;
-    font-size: 11.5px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--text);
-    cursor: pointer;
-  }
-
-  .link-copy-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .profile-header .userid {
-    color: var(--text-dim);
-    font-size: 11px;
-    margin-top: 4px;
-    font-family: monospace;
-  }
-
-  .estado-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: var(--input-bg);
-    margin-left: 4px;
-  }
-
+  .profile-header .info { min-width: 0; }
+  .profile-header h2 { margin: 0 0 2px 0; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  .profile-header .username { color: var(--accent); font-size: 14px; }
+  .perfil-link-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .perfil-link-row span { font-size: 12.5px; color: var(--text-dim); word-break: break-all; }
+  .link-copy-btn { padding: 4px 10px; font-size: 11.5px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; }
+  .link-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .profile-header .userid { color: var(--text-dim); font-size: 11px; margin-top: 4px; font-family: monospace; }
+  .estado-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--input-bg); margin-left: 4px; }
   .estado-opcion {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 10px 14px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: none;
-    color: var(--text);
-    font-family: inherit;
-    font-size: 13px;
-    cursor: pointer;
+    display: block; width: 100%; text-align: left; padding: 10px 14px;
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: none; color: var(--text); font-family: inherit; font-size: 13px; cursor: pointer;
   }
+  .estado-opcion.activo { border-color: var(--accent); background: rgba(91,141,239,0.08); }
+  .badge-verificado { width: 16px; height: 16px; vertical-align: -2px; }
 
-  .estado-opcion.activo {
-    border-color: var(--accent);
-    background: rgba(91,141,239,0.08);
+  label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 4px; margin-top: 14px; }
+  input, textarea {
+    width: 100%; padding: 11px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--input-bg); color: var(--text); font-size: 14px; font-family: inherit;
   }
+  textarea { min-height: 80px; resize: vertical; }
+  .username-input-row { display: flex; align-items: center; gap: 4px; }
+  .username-prefix { color: var(--text-dim); font-size: 14px; }
+  .field-msg { font-size: 12px; margin-top: 4px; display: none; }
+  .field-msg.error { color: var(--danger); display: block; }
+  .field-msg.ok { color: var(--success); display: block; }
 
-  .badge-verificado {
-    width: 16px;
-    height: 16px;
-    vertical-align: -2px;
-  }
-
-  /* =========================
-     FORMULARIOS
-     ========================= */
-
-  label {
-    font-size: 12px;
-    color: var(--text-dim);
-    display: block;
-    margin-bottom: 4px;
-    margin-top: 14px;
-  }
-
-  input,
-  textarea {
-    width: 100%;
-    padding: 11px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--input-bg);
-    color: var(--text);
-    font-size: 14px;
-    font-family: inherit;
-  }
-
-  textarea {
-    min-height: 80px;
-    resize: vertical;
-  }
-
-  .username-input-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .username-prefix {
-    color: var(--text-dim);
-    font-size: 14px;
-  }
-
-  .field-msg {
-    font-size: 12px;
-    margin-top: 4px;
-    display: none;
-  }
-
-  .field-msg.error {
-    color: var(--danger);
-    display: block;
-  }
-
-  .field-msg.ok {
-    color: var(--success);
-    display: block;
-  }
-
-  /* =========================
-     ROLES
-     ========================= */
-
-  .roles-actuales {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-  }
-
+  .roles-actuales { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .role-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(91,141,239,0.15);
-    color: var(--accent);
-    padding: 5px 12px;
-    border-radius: 999px;
-    font-size: 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(91,141,239,0.15); color: var(--accent);
+    padding: 5px 12px; border-radius: 999px; font-size: 12px;
   }
+  .role-chip.pendiente { background: rgba(224,169,65,0.15); color: var(--warn); }
+  .role-chip span { cursor: pointer; font-weight: bold; opacity: 0.7; }
 
-  .role-chip.pendiente {
-    background: rgba(224,169,65,0.15);
-    color: var(--warn);
-  }
-
-  .role-chip span {
-    cursor: pointer;
-    font-weight: bold;
-    opacity: 0.7;
-  }
-
-  .roles-disponibles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
-  }
-
+  .roles-disponibles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .role-option {
-    padding: 5px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
+    padding: 5px 12px; border-radius: 999px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border); color: var(--text-dim);
   }
+  .role-option:hover { background: var(--input-bg); }
 
-  .role-option:hover {
-    background: var(--input-bg);
-  }
+  .proponer-rol-row { display: flex; gap: 8px; margin-top: 12px; }
+  .proponer-rol-row input { flex: 1; }
+  .proponer-rol-row button { white-space: nowrap; }
 
-  .proponer-rol-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .proponer-rol-row input {
-    flex: 1;
-  }
-
-  .proponer-rol-row button {
-    white-space: nowrap;
-  }
-
-  /* =========================
-     MENSAJES
-     ========================= */
-
-  .msg-guardado {
-    font-size: 13px;
-    padding: 8px 12px;
-    border-radius: var(--radius);
-    margin-top: 12px;
-    display: none;
-  }
-
-  .msg-guardado.ok {
-    background: rgba(76,175,125,0.12);
-    color: var(--success);
-    display: block;
-  }
-
-  .msg-guardado.error {
-    background: rgba(227,93,93,0.12);
-    color: var(--danger);
-    display: block;
-  }
-
-  .hidden {
-    display: none !important;
-  }
-
-  /* =========================
-     EFECTOS DE PERFIL
-     ========================= */
-
-  .banner-item,
-  .efecto-item {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    text-align: center;
-    background: none;
-    color: var(--text);
-    font-family: inherit;
-    position: relative;
-  }
-
-  .banner-item.activo,
-  .efecto-item.activo {
-    border-color: var(--accent);
-  }
-
-  .banner-item .swatch {
-    height: 40px;
-    border-radius: 8px;
-    margin-bottom: 6px;
-  }
-
-  .banner-item .costo,
-  .efecto-item .costo {
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-
-  .banner-item.bloqueado,
-  .efecto-item.bloqueado {
-    opacity: 0.55;
-  }
+  .msg-guardado { font-size: 13px; padding: 8px 12px; border-radius: var(--radius); margin-top: 12px; display: none; }
+  .msg-guardado.ok { background: rgba(76,175,125,0.12); color: var(--success); display: block; }
+  .msg-guardado.error { background: rgba(227,93,93,0.12); color: var(--danger); display: block; }
+  .hidden { display: none !important; }
+/* Efectos de perfil: ver /efectos-perfil.css, enlazado con LINK en el head
+   (no con @import aquí -- @import debe ir como la primera regla del bloque de
+   estilos o el navegador lo descarta en silencio, y este bloque ya tenia otras
+   reglas antes, lo cual causaba que ningun efecto DOM se viera). */
+.banner-item, .efecto-item {
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 8px;
+  cursor: pointer; font-size: 12px; text-align: center; background: none; color: var(--text);
+  font-family: inherit; position: relative;
+}
+.banner-item.activo, .efecto-item.activo { border-color: var(--accent); }
+.banner-item .swatch { height: 40px; border-radius: 8px; margin-bottom: 6px; }
+.banner-item .costo, .efecto-item .costo { font-size: 11px; color: var(--text-dim); }
+.banner-item.bloqueado, .efecto-item.bloqueado { opacity: 0.55; }
 </style>
 </head>
-
 <body>
 
 <header>
   <h1>👤 Mi perfil</h1>
-
-  <a href="/">
-    <button class="secondary">Volver al sitio</button>
-  </a>
+  <a href="/"><button class="secondary">Volver al sitio</button></a>
 </header>
 
 <div class="container">
-
   <div class="card">
-
-    <!-- =========================
-         BANNER + AVATAR
-         ========================= -->
-
     <div class="banner-header" id="bannerHeaderPerfil">
-
-      <canvas
-        id="canvasHeaderPerfil"
-        style="position:absolute; inset:0; width:100%; height:100%;"
-      ></canvas>
-
+      <canvas id="canvasHeaderPerfil" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
       <div class="avatar-sobre-banner">
-
-        <img
-          id="avatarPreview"
-          class="avatar-preview hidden"
-          alt="Foto de perfil"
-        >
-
-        <div
-          id="avatarInicial"
-          class="avatar-preview"
-        ></div>
-
+        <img id="avatarPreview" class="avatar-preview hidden">
+        <div id="avatarInicial" class="avatar-preview"></div>
       </div>
     </div>
-
-    <!-- =========================
-         INFORMACIÓN DEL PERFIL
-         ========================= -->
-
     <div class="profile-header">
-
       <div class="info">
-
-        <h2>
-          <span id="nombreActual">Cargando...</span>
-
-          <span id="insigniasActual"></span>
-
-          <span
-            class="estado-chip"
-            id="estadoChipPropio"
-          ></span>
-        </h2>
-
-        <div
-          class="username"
-          id="usernameActual"
-        ></div>
-
-        <div
-          class="userid"
-          id="useridActual"
-        ></div>
-
-        <div
-          class="perfil-link-row hidden"
-          id="perfilLinkRow"
-        >
+        <h2><span id="nombreActual">Cargando...</span><span id="insigniasActual"></span><span class="estado-chip" id="estadoChipPropio"></span></h2>
+        <div class="username" id="usernameActual"></div>
+        <div class="userid" id="useridActual"></div>
+        <div class="perfil-link-row hidden" id="perfilLinkRow">
           <span id="perfilLinkTexto"></span>
-
-          <button
-            type="button"
-            id="btnCopiarPerfilLink"
-            class="link-copy-btn"
-          >
-            Copiar enlace
-          </button>
+          <button type="button" id="btnCopiarPerfilLink" class="link-copy-btn">Copiar enlace</button>
         </div>
-
       </div>
-
     </div>
 
-    <!-- =========================
-         NOMBRE
-         ========================= -->
+    <label>Nombre que se ve en el sitio</label>
+    <input type="text" id="inputNombre" placeholder="Tu nombre">
 
-    <label>
-      Nombre que se ve en el sitio
-    </label>
-
-    <input
-      type="text"
-      id="inputNombre"
-      placeholder="Tu nombre"
-    >
-
-    <!-- =========================
-         USERNAME
-         ========================= -->
-
-    <label>
-      Nombre de usuario (@único)
-    </label>
-
+    <label>Nombre de usuario (@único)</label>
     <div class="username-input-row">
-
-      <span class="username-prefix">
-        @
-      </span>
-
-      <input
-        type="text"
-        id="inputUsername"
-        placeholder="tu-usuario"
-      >
-
+      <span class="username-prefix">@</span>
+      <input type="text" id="inputUsername" placeholder="tu-usuario">
     </div>
+    <div class="field-msg" id="usernameMsg"></div>
 
-    <div
-      class="field-msg"
-      id="usernameMsg"
-    ></div>
+    <label>Foto de perfil</label>
+    <input type="hidden" id="inputFotoURL">
+    <input type="file" id="inputFotoArchivo" accept="image/*" class="hidden">
+    <button type="button" id="btnElegirFotoPerfil" class="secondary" style="width:100%;">📷 Elegir foto desde tu dispositivo</button>
+    <div id="msgSubidaFoto" class="field-msg"></div>
 
-    <!-- =========================
-         FOTO DE PERFIL
-         ========================= -->
+    <label>Descripción / bio</label>
+    <textarea id="inputDescripcion" placeholder="Cuéntale algo a los demás sobre ti..."></textarea>
 
-    <label>
-      Foto de perfil
+    <label style="display:flex; align-items:center; gap:8px; margin-top:18px; cursor:pointer;">
+      <input type="checkbox" id="checkSeguidoresPrivados" style="width:auto;">
+      <span style="margin:0; font-size:13px; color:var(--text);">Ocultar mi lista de seguidores/seguidos (otros usuarios solo verán el número, no quiénes son)</span>
     </label>
 
-    <input
-      type="hidden"
-      id="inputFotoURL"
-    >
-
-    <input
-      type="file"
-      id="inputFotoArchivo"
-      accept="image/*"
-      class="hidden"
-    >
-
-    <button
-      type="button"
-      id="btnElegirFotoPerfil"
-      class="secondary"
-      style="width:100%;"
-    >
-      📷 Elegir foto desde tu dispositivo
-    </button>
-
-    <div
-      id="msgSubidaFoto"
-      class="field-msg"
-    ></div>
-
-    <!-- =========================
-         BIO
-         ========================= -->
-
-    <label>
-      Descripción / bio
-    </label>
-
-    <textarea
-      id="inputDescripcion"
-      placeholder="Cuéntale algo a los demás sobre ti..."
-    ></textarea>
-
-    <!-- =========================
-         PRIVACIDAD SEGUIDORES
-         ========================= -->
-
-    <label
-      style="display:flex; align-items:center; gap:8px; margin-top:18px; cursor:pointer;"
-    >
-
-      <input
-        type="checkbox"
-        id="checkSeguidoresPrivados"
-        style="width:auto;"
-      >
-
-      <span
-        style="margin:0; font-size:13px; color:var(--text);"
-      >
-        Ocultar mi lista de seguidores/seguidos
-        (otros usuarios solo verán el número, no quiénes son)
-      </span>
-
-    </label>
-
-    <!-- =========================
-         REDES SOCIALES
-         ========================= -->
-
-    <div
-      class="card"
-      style="margin-top:22px;"
-    >
-
-      <h3
-        style="margin-top:0; font-size:15px;"
-      >
-        🔗 Redes sociales
-      </h3>
-
-      <p
-        style="font-size:13px; color:var(--text-dim); margin-top:-4px;"
-      >
-        Todos los campos son opcionales — se muestran en tu perfil solo si los llenas.
-      </p>
+    <div class="card" style="margin-top:22px;">
+      <h3 style="margin-top:0; font-size:15px;">🔗 Redes sociales</h3>
+      <p style="font-size:13px; color:var(--text-dim); margin-top:-4px;">Todos los campos son opcionales — se muestran en tu perfil solo si los llenas.</p>
 
       <label>Instagram</label>
-
-      <input
-        type="text"
-        id="inputRed_instagram"
-        placeholder="https://instagram.com/tu-usuario"
-      >
+      <input type="text" id="inputRed_instagram" placeholder="https://instagram.com/tu-usuario">
 
       <label>TikTok</label>
-
-      <input
-        type="text"
-        id="inputRed_tiktok"
-        placeholder="https://tiktok.com/@tu-usuario"
-      >
+      <input type="text" id="inputRed_tiktok" placeholder="https://tiktok.com/@tu-usuario">
 
       <label>Discord</label>
-
-      <input
-        type="text"
-        id="inputRed_discord"
-        placeholder="https://discord.gg/tu-servidor o tu-usuario"
-      >
+      <input type="text" id="inputRed_discord" placeholder="https://discord.gg/tu-servidor o tu-usuario">
 
       <label>X (Twitter)</label>
-
-      <input
-        type="text"
-        id="inputRed_x"
-        placeholder="https://x.com/tu-usuario"
-      >
+      <input type="text" id="inputRed_x" placeholder="https://x.com/tu-usuario">
 
       <label>WhatsApp</label>
-
-      <input
-        type="text"
-        id="inputRed_whatsapp"
-        placeholder="Ej. 5219841234567 (con código de país, sin espacios)"
-      >
+      <input type="text" id="inputRed_whatsapp" placeholder="Ej. 5219841234567 (con código de país, sin espacios)">
 
       <label>Link in bio</label>
-
-      <input
-        type="text"
-        id="inputRed_linkInBio"
-        placeholder="https://tu-link-personal.com"
-      >
-
+      <input type="text" id="inputRed_linkInBio" placeholder="https://tu-link-personal.com">
     </div>
 
-    <!-- =========================
-         SPOTIFY
-         ========================= -->
+    <div class="card" style="margin-top:22px;">
+      <h3 style="margin-top:0; font-size:15px;">🎵 Spotify</h3>
+      <p id="textoEstadoSpotify" style="font-size:13px; color:var(--text-dim); margin-top:-4px;">Cargando...</p>
+      <button id="btnConectarSpotify" class="hidden" style="width:100%;">Conectar mi cuenta de Spotify</button>
+      <button id="btnDesconectarSpotify" class="secondary hidden" style="width:100%;">Desconectar Spotify</button>
 
-    <div
-      class="card"
-      style="margin-top:22px;"
-    >
+      <div id="camposMusicaConectada" class="hidden">
+        <label style="margin-top:16px;">Canción favorita</label>
+        <input type="text" id="inputCancionFavorita" placeholder="Busca una canción...">
+        <div id="resultadosCancionFavorita" style="margin-top:6px;"></div>
+        <div id="cancionFavoritaElegida" style="margin-top:8px;"></div>
 
-      <h3
-        style="margin-top:0; font-size:15px;"
-      >
-        🎵 Spotify
-      </h3>
-
-      <p
-        id="textoEstadoSpotify"
-        style="font-size:13px; color:var(--text-dim); margin-top:-4px;"
-      >
-        Cargando...
-      </p>
-
-      <button
-        id="btnConectarSpotify"
-        class="hidden"
-        style="width:100%;"
-      >
-        Conectar mi cuenta de Spotify
-      </button>
-
-      <button
-        id="btnDesconectarSpotify"
-        class="secondary hidden"
-        style="width:100%;"
-      >
-        Desconectar Spotify
-      </button>
-
-      <div
-        id="camposMusicaConectada"
-        class="hidden"
-      >
-
-        <label style="margin-top:16px;">
-          Canción favorita
-        </label>
-
-        <input
-          type="text"
-          id="inputCancionFavorita"
-          placeholder="Busca una canción..."
-        >
-
-        <div
-          id="resultadosCancionFavorita"
-          style="margin-top:6px;"
-        ></div>
-
-        <div
-          id="cancionFavoritaElegida"
-          style="margin-top:8px;"
-        ></div>
-
-        <label style="margin-top:16px;">
-          ¿Quién puede ver tu música (canción actual y más escuchado)?
-        </label>
-
-        <select
-          id="selectPrivacidadSpotify"
-          style="width:100%;"
-        >
+        <label style="margin-top:16px;">¿Quién puede ver tu música (canción actual y más escuchado)?</label>
+        <select id="selectPrivacidadSpotify" style="width:100%;">
           <option value="publico">Cualquiera</option>
           <option value="amigos">Solo mis amigos</option>
           <option value="privado">Solo yo</option>
         </select>
-
       </div>
-
     </div>
 
-    <!-- =========================
-         LAST.FM
-         ========================= -->
-
-    <div
-      class="card hidden"
-      id="seccionLastfm"
-      style="margin-top:22px;"
-    >
-
-      <h3
-        style="margin-top:0; font-size:15px;"
-      >
-        📊 Last.fm
-      </h3>
-
-      <p
-        id="textoEstadoLastfm"
-        style="font-size:13px; color:var(--text-dim); margin-top:-4px;"
-      >
-        Cargando...
-      </p>
-
-      <input
-        type="text"
-        id="inputUsernameLastfm"
-        placeholder="Tu nombre de usuario en Last.fm"
-      >
-
-      <button
-        id="btnConectarLastfm"
-        style="width:100%;"
-      >
-        Conectar Last.fm
-      </button>
-
-      <button
-        id="btnDesconectarLastfm"
-        class="secondary hidden"
-        style="width:100%;"
-      >
-        Desconectar Last.fm
-      </button>
-
-      <select
-        id="selectPrivacidadLastfm"
-        class="hidden"
-        style="width:100%; margin-top:10px;"
-      >
-        <option value="publico">
-          Cualquiera puede ver mis estadísticas
-        </option>
-
-        <option value="amigos">
-          Solo mis amigos
-        </option>
-
-        <option value="privado">
-          Solo yo
-        </option>
+    <!-- Last.fm: complemento a Spotify (estadísticas históricas de escucha).
+         La card tiene "hidden" de fábrica y perfil.js la revela solo si
+         LASTFM_ACTIVO === true en lastfm.js — apágalo/enciéndelo desde ahí. -->
+    <div class="card hidden" id="seccionLastfm" style="margin-top:22px;">
+      <h3 style="margin-top:0; font-size:15px;">📊 Last.fm</h3>
+      <p id="textoEstadoLastfm" style="font-size:13px; color:var(--text-dim); margin-top:-4px;">Cargando...</p>
+      <input type="text" id="inputUsernameLastfm" placeholder="Tu nombre de usuario en Last.fm">
+      <button id="btnConectarLastfm" style="width:100%;">Conectar Last.fm</button>
+      <button id="btnDesconectarLastfm" class="secondary hidden" style="width:100%;">Desconectar Last.fm</button>
+      <select id="selectPrivacidadLastfm" class="hidden" style="width:100%; margin-top:10px;">
+        <option value="publico">Cualquiera puede ver mis estadísticas</option>
+        <option value="amigos">Solo mis amigos</option>
+        <option value="privado">Solo yo</option>
       </select>
-
-      <div
-        class="field-msg"
-        id="msgLastfm"
-      ></div>
-
+      <div class="field-msg" id="msgLastfm"></div>
     </div>
 
-    <!-- =========================
-         RECOMENDACIONES IA
-         ========================= -->
-
-    <div
-      class="card hidden"
-      id="seccionRecomendacionIA"
-      style="margin-top:22px;"
-    >
-
-      <h3
-        style="margin-top:0; font-size:15px;"
-      >
-        🤖 Recomendaciones con IA
-      </h3>
-
-      <p
-        style="font-size:13px; color:var(--text-dim); margin-top:-4px;"
-      >
-        Basadas en tus estadísticas de Last.fm. Se actualizan solas de vez en cuando,
-        o puedes pedir una nueva cuando quieras.
-      </p>
-
-      <button
-        id="btnPedirRecomendacionIA"
-        style="width:100%;"
-      >
-        Recomiéndame canciones
-      </button>
-
-      <div
-        id="listaRecomendacionIA"
-        class="hidden"
-        style="margin-top:12px; font-size:13.5px; white-space:pre-wrap; line-height:1.6; background:var(--input-bg); border-radius:var(--radius); padding:12px 14px;"
-      ></div>
-
-      <div
-        class="field-msg"
-        id="msgRecomendacionIA"
-      ></div>
-
+    <!-- Recomendaciones con IA: requiere Last.fm conectado y el flag
+         IA_ACTIVA en true dentro de ia-recomendaciones.js. -->
+    <div class="card hidden" id="seccionRecomendacionIA" style="margin-top:22px;">
+      <h3 style="margin-top:0; font-size:15px;">🤖 Recomendaciones con IA</h3>
+      <p style="font-size:13px; color:var(--text-dim); margin-top:-4px;">Basadas en tus estadísticas de Last.fm. Se actualizan solas de vez en cuando, o puedes pedir una nueva cuando quieras.</p>
+      <button id="btnPedirRecomendacionIA" style="width:100%;">Recomiéndame canciones</button>
+      <div id="listaRecomendacionIA" class="hidden" style="margin-top:12px; font-size:13.5px; white-space:pre-wrap; line-height:1.6; background:var(--input-bg); border-radius:var(--radius); padding:12px 14px;"></div>
+      <div class="field-msg" id="msgRecomendacionIA"></div>
     </div>
 
-    <!-- =========================
-         ESTADO
-         ========================= -->
-
-    <div
-      class="card"
-      style="margin-top:22px;"
-    >
-
-      <h3
-        style="margin-top:0; font-size:15px;"
-      >
-        🟢 Estado
-      </h3>
-
-      <p
-        style="font-size:13px; color:var(--text-dim); margin-top:-4px;"
-      >
-        Se muestra junto a tu nombre. Por defecto es automático
-        (En línea mientras usas el sitio, Desconectado si lo cierras).
-      </p>
-
-      <div
-        id="listaEstadosManual"
-        style="display:flex; flex-direction:column; gap:6px;"
-      ></div>
-
-      <div
-        id="campoEstadoPersonalizado"
-        class="hidden"
-        style="margin-top:10px;"
-      >
-
-        <input
-          type="text"
-          id="inputEstadoPersonalizado"
-          placeholder="Escribe tu estado..."
-          maxlength="40"
-        >
-
-        <button
-          id="btnGuardarEstadoPersonalizado"
-          style="width:100%; margin-top:6px;"
-        >
-          Guardar estado
-        </button>
-
+    <div class="card" style="margin-top:22px;">
+      <h3 style="margin-top:0; font-size:15px;">🟢 Estado</h3>
+      <p style="font-size:13px; color:var(--text-dim); margin-top:-4px;">Se muestra junto a tu nombre. Por defecto es automático (En línea mientras usas el sitio, Desconectado si lo cierras).</p>
+      <div id="listaEstadosManual" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <div id="campoEstadoPersonalizado" class="hidden" style="margin-top:10px;">
+        <input type="text" id="inputEstadoPersonalizado" placeholder="Escribe tu estado..." maxlength="40">
+        <button id="btnGuardarEstadoPersonalizado" style="width:100%; margin-top:6px;">Guardar estado</button>
       </div>
-
     </div>
 
-    <!-- =========================
-         PERSONALIZACIÓN
-         ========================= -->
+    <div class="card" style="margin-top:22px;">
+      <h3 style="margin-top:0; font-size:15px;">🎨 Personalización de perfil</h3>
+      <p style="font-size:13px; color:var(--text-dim); margin-top:-4px;">Elige el banner y el efecto animado que se ven en tu perfil. Algunos son gratis, otros se compran con Ox2.</p>
 
-    <div
-      class="card"
-      style="margin-top:22px;"
-    >
-
-      <h3
-        style="margin-top:0; font-size:15px;"
-      >
-        🎨 Personalización de perfil
-      </h3>
-
-      <p
-        style="font-size:13px; color:var(--text-dim); margin-top:-4px;"
-      >
-        Elige el banner y el efecto animado que se ven en tu perfil.
-        Algunos son gratis, otros se compran con Ox2.
-      </p>
-
-      <div
-        id="previewPerfilPersonalizado"
-        style="position:relative; height:180px; border-radius:var(--radius); overflow:hidden; margin-bottom:16px; border:1px solid var(--border);"
-      >
-
-        <canvas
-          id="canvasPreviewEfecto"
-          style="position:absolute; inset:0; width:100%; height:100%;"
-        ></canvas>
-
+      <div id="previewPerfilPersonalizado" style="position:relative; height:180px; border-radius:var(--radius); overflow:hidden; margin-bottom:16px; border:1px solid var(--border);">
+        <canvas id="canvasPreviewEfecto" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
       </div>
 
       <label>Banner</label>
+      <input type="file" id="inputBannerArchivo" accept="image/*" class="hidden">
+      <div id="gridBanners" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
 
-      <input
-        type="file"
-        id="inputBannerArchivo"
-        accept="image/*"
-        class="hidden"
-      >
+      <label style="margin-top:18px;">Efecto animado</label>
+      <div id="gridEfectos" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
 
-      <div
-        id="gridBanners"
-        style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"
-      ></div>
-
-      <label style="margin-top:18px;">
-        Efecto animado
-      </label>
-
-      <div
-        id="gridEfectos"
-        style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"
-      ></div>
-
-      <div
-        class="msg"
-        id="msgPersonalizacion"
-      ></div>
-
+      <div class="msg" id="msgPersonalizacion"></div>
     </div>
 
-    <!-- =========================
-         ROLES
-         ========================= -->
+    <label>Roles</label>
+    <div class="roles-actuales" id="rolesActuales"></div>
 
-    <label>
-      Roles
-    </label>
+    <label style="margin-top:18px;">Agregar un rol existente</label>
+    <div class="roles-disponibles" id="rolesDisponiblesLista"></div>
 
-    <div
-      class="roles-actuales"
-      id="rolesActuales"
-    ></div>
-
-    <label style="margin-top:18px;">
-      Agregar un rol existente
-    </label>
-
-    <div
-      class="roles-disponibles"
-      id="rolesDisponiblesLista"
-    ></div>
-
-    <label style="margin-top:18px;">
-      ¿No está tu rol? Propón uno nuevo
-    </label>
-
+    <label style="margin-top:18px;">¿No está tu rol? Propón uno nuevo</label>
     <div class="proponer-rol-row">
-
-      <input
-        type="text"
-        id="inputNuevoRol"
-        placeholder="Ej. Helper, Diseñador..."
-      >
-
-      <button
-        class="secondary"
-        id="btnProponerRol"
-      >
-        Proponer
-      </button>
-
+      <input type="text" id="inputNuevoRol" placeholder="Ej. Helper, Diseñador...">
+      <button class="secondary" id="btnProponerRol">Proponer</button>
     </div>
+    <div class="field-msg" id="proponerRolMsg"></div>
 
-    <div
-      class="field-msg"
-      id="proponerRolMsg"
-    ></div>
-
-    <!-- =========================
-         GUARDAR
-         ========================= -->
-
-    <button
-      id="btnGuardarPerfil"
-      style="width:100%; margin-top:20px;"
-    >
-      Guardar cambios
-    </button>
-
-    <div
-      class="msg-guardado"
-      id="msgGuardado"
-    ></div>
-
+    <button id="btnGuardarPerfil" style="width:100%; margin-top:20px;">Guardar cambios</button>
+    <div class="msg-guardado" id="msgGuardado"></div>
   </div>
-
 </div>
 
-<script
-  type="module"
-  src="/perfil.js"
-></script>
-
+<script type="module" src="/perfil.js"></script>
 </body>
 </html>
