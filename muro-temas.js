@@ -1,9 +1,13 @@
-// temas.js
-// "Temas" con nombre propio, creados por usuarios. Un tema es, por dentro, el
-// mismo hashtag que el muro ya sabía filtrar (misma colección "publicaciones",
-// mismo campo "hashtags") — esto solo le pone un registro con nombre, creador
-// y contador encima, para poder crearlos y listarlos aunque nadie haya
-// publicado ahí todavía.
+// muro-temas.js
+// (Antes llamado "temas.js" por error — ese nombre ya lo usa el sistema de
+// temas VISUALES del sitio, tema-inline.js + temas.js. Este archivo es algo
+// completamente distinto: "temas" con nombre propio creados por usuarios
+// dentro del muro, no tiene nada que ver con colores.)
+//
+// Un tema de muro es, por dentro, el mismo hashtag que el muro ya sabía
+// filtrar (misma colección "publicaciones", mismo campo "hashtags") — esto
+// solo le pone un registro con nombre, creador y contador encima, para poder
+// crearlos y listarlos aunque nadie haya publicado ahí todavía.
 
 import { db } from "./firebase-config.js";
 import {
