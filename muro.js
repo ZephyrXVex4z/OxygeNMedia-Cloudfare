@@ -10,9 +10,9 @@ import { crearNotificacion } from "./notificaciones.js";
 import { otorgarOxPorLike, otorgarOxPorPublicar } from "./recompensas.js";
 import { incrementarContadorTema } from "./temas.js";
 
-// Extrae hashtags (#tema) y menciones (@usuario) de un texto, en minÃºsculas y sin sÃ­mbolo
+// Extrae hashtags (#tema) y menciones (@usuario) de un texto, en minúsculas y sin símbolo
 function extraerHashtags(texto) {
-  const matches = texto.match(/#[\wÃ¡Ã©Ã­Ã³ÃºÃ±]+/gi) || [];
+  const matches = texto.match(/#[\wáéíóúñ]+/gi) || [];
   return [...new Set(matches.map(h => h.slice(1).toLowerCase()))];
 }
 function extraerMenciones(texto) {
@@ -20,7 +20,7 @@ function extraerMenciones(texto) {
   return [...new Set(matches.map(m => m.slice(1).toLowerCase()))];
 }
 
-// Crea una publicaciÃ³n nueva
+// Crea una publicación nueva
 export async function crearPublicacion({ autorId, autorNombre, autorFotoURL, texto, imagenURL, recursoCitado, repostDe = null, temaSlug = null }) {
   const hashtags = extraerHashtags(texto || "");
   if (temaSlug && !hashtags.includes(temaSlug)) hashtags.push(temaSlug);
@@ -33,7 +33,7 @@ export async function crearPublicacion({ autorId, autorNombre, autorFotoURL, tex
     texto: texto || "",
     imagenURL: imagenURL || "",
     recursoCitado: recursoCitado || null,
-    repostDe: repostDe || null, // { pubId, autorNombre, texto, imagenURL } â€” snapshot del post original
+    repostDe: repostDe || null, // { pubId, autorNombre, texto, imagenURL } — snapshot del post original
     temaSlug: temaSlug || null,
     hashtags,
     likesCount: 0,
@@ -42,18 +42,18 @@ export async function crearPublicacion({ autorId, autorNombre, autorFotoURL, tex
   });
 
   if (temaSlug) {
-    try { await incrementarContadorTema(temaSlug); } catch (e) { /* el post ya se creÃ³ igual */ }
+    try { await incrementarContadorTema(temaSlug); } catch (e) { /* el post ya se creó igual */ }
   }
 
-  // Resuelve menciones @username -> notificaciÃ³n a esa persona (si el username existe)
+  // Resuelve menciones @username -> notificación a esa persona (si el username existe)
   if (usernamesMencionados.length > 0) {
     await notificarMenciones(usernamesMencionados, autorId, autorNombre, ref.id);
   }
 
-  // Solo los posts ORIGINALES dan Ox2 de recompensa (no los reposts â€” si no, repostear en
-  // bucle serÃ­a una forma trivial de farmear Ox2 gratis sin aportar contenido real).
+  // Solo los posts ORIGINALES dan Ox2 de recompensa (no los reposts — si no, repostear en
+  // bucle sería una forma trivial de farmear Ox2 gratis sin aportar contenido real).
   if (!repostDe) {
-    try { await otorgarOxPorPublicar(autorId, ref.id); } catch (e) { /* si falla la recompensa, la publicaciÃ³n ya se creÃ³ igual */ }
+    try { await otorgarOxPorPublicar(autorId, ref.id); } catch (e) { /* si falla la recompensa, la publicación ya se creó igual */ }
   }
 
   return ref.id;
@@ -72,15 +72,15 @@ export async function notificarMenciones(usernames, autorId, autorNombre, pubId,
         deUid: autorId,
         deNombre: autorNombre,
         texto: contexto === "comentario"
-          ? `${autorNombre} te mencionÃ³ en un comentario`
-          : `${autorNombre} te mencionÃ³ en una publicaciÃ³n`,
+          ? `${autorNombre} te mencionó en un comentario`
+          : `${autorNombre} te mencionó en una publicación`,
         dataExtra: { pubId }
       });
-    } catch (e) { /* si falla una menciÃ³n no debe tumbar la publicaciÃ³n entera */ }
+    } catch (e) { /* si falla una mención no debe tumbar la publicación entera */ }
   }
 }
 
-// Comparte (reposta) una publicaciÃ³n existente a tu propio muro, con comentario opcional
+// Comparte (reposta) una publicación existente a tu propio muro, con comentario opcional
 export async function repostearPublicacion(pubOriginal, autorId, autorNombre, autorFotoURL, comentarioExtra) {
   return crearPublicacion({
     autorId, autorNombre, autorFotoURL,
@@ -96,7 +96,7 @@ export async function repostearPublicacion(pubOriginal, autorId, autorNombre, au
   });
 }
 
-// Edita el texto/imagen/cita de una publicaciÃ³n existente (el autor la sigue viendo como suya)
+// Edita el texto/imagen/cita de una publicación existente (el autor la sigue viendo como suya)
 export async function editarPublicacion(pubId, { texto, imagenURL, recursoCitado }) {
   await updateDoc(doc(db, "publicaciones", pubId), {
     texto: texto || "",
@@ -106,12 +106,12 @@ export async function editarPublicacion(pubId, { texto, imagenURL, recursoCitado
   });
 }
 
-// Trae publicaciones para el feed, con soporte de paginaciÃ³n por cursor.
+// Trae publicaciones para el feed, con soporte de paginación por cursor.
 // Si se pasa uidsPermitidos (lista de UIDs de amigos + uno mismo), filtra solo esos autores.
-// cursorUltimoDoc: el snapshot del Ãºltimo documento de la pÃ¡gina anterior (para "cargar mÃ¡s").
-// Devuelve { publicaciones, ultimoDoc, hayMas } â€” ultimoDoc se pasa de vuelta para pedir la siguiente pÃ¡gina.
+// cursorUltimoDoc: el snapshot del último documento de la página anterior (para "cargar más").
+// Devuelve { publicaciones, ultimoDoc, hayMas } — ultimoDoc se pasa de vuelta para pedir la siguiente página.
 export async function obtenerFeed({ cantidad = 15, soloDeUids = null, cursorUltimoDoc = null, hashtag = null } = {}) {
-  // Cuando se filtra por amigos o hashtag, pedimos de mÃ¡s porque luego filtramos en el cliente
+  // Cuando se filtra por amigos o hashtag, pedimos de más porque luego filtramos en el cliente
   const filtrando = !!(soloDeUids || hashtag);
   const limiteQuery = filtrando ? cantidad * 3 : cantidad + 1;
 
@@ -147,9 +147,9 @@ export async function borrarPublicacion(pubId) {
 }
 
 /**
- * BÃºsqueda de publicaciones por texto, autor o hashtag/tema. Igual que la
- * bÃºsqueda de usuarios por @username (ver ver-perfil.js): trae un lote
- * reciente y filtra en el navegador â€” funciona bien a la escala de este
+ * Búsqueda de publicaciones por texto, autor o hashtag/tema. Igual que la
+ * búsqueda de usuarios por @username (ver ver-perfil.js): trae un lote
+ * reciente y filtra en el navegador — funciona bien a la escala de este
  * proyecto sin depender de un buscador externo.
  */
 export async function buscarPublicaciones(texto, cantidad = 30) {
@@ -172,13 +172,13 @@ export async function buscarPublicaciones(texto, cantidad = 30) {
 
 // ============ LIKES ============
 
-// Devuelve true si el usuario ya le dio like a esta publicaciÃ³n
+// Devuelve true si el usuario ya le dio like a esta publicación
 export async function yaDioLike(pubId, uid) {
   const snap = await getDoc(doc(db, "publicaciones", pubId, "likes", uid));
   return snap.exists();
 }
 
-// Trae la lista de nombres de quienes dieron like (para mostrar "A quiÃ©n le gustÃ³")
+// Trae la lista de nombres de quienes dieron like (para mostrar "A quién le gustó")
 export async function listarQuienesDieronLike(pubId) {
   const snap = await getDocs(collection(db, "publicaciones", pubId, "likes"));
   const uids = snap.docs.map(d => d.id);
@@ -191,7 +191,7 @@ export async function listarQuienesDieronLike(pubId) {
 }
 
 // Alterna el like: si ya existe lo quita (y resta contador), si no existe lo crea (y suma).
-// Usa runTransaction para que el contador y el documento de like cambien de forma atÃ³mica.
+// Usa runTransaction para que el contador y el documento de like cambien de forma atómica.
 export async function alternarLike(pubId, uid, autorPubUid, autorPubNombre, miNombre) {
   const refLike = doc(db, "publicaciones", pubId, "likes", uid);
   const refPub = doc(db, "publicaciones", pubId);
@@ -202,7 +202,7 @@ export async function alternarLike(pubId, uid, autorPubUid, autorPubNombre, miNo
   await runTransaction(db, async (tx) => {
     const snapLike = await tx.get(refLike);
     const snapPub = await tx.get(refPub);
-    if (!snapPub.exists()) throw new Error("Esta publicaciÃ³n ya no existe.");
+    if (!snapPub.exists()) throw new Error("Esta publicación ya no existe.");
 
     const likesActual = snapPub.data().likesCount || 0;
 
@@ -216,9 +216,9 @@ export async function alternarLike(pubId, uid, autorPubUid, autorPubNombre, miNo
       seAgrego = true;
 
       // El Ox2 de recompensa solo se otorga la PRIMERA vez que este uid le da like a
-      // esta publicaciÃ³n â€” sin esto, dar like/quitar like en bucle sobre el mismo post
-      // generarÃ­a Ox2 infinito (el documento de like se borra al quitar el like, asÃ­
-      // que el candado no puede vivir ahÃ­; vive en la publicaciÃ³n, que nunca se borra
+      // esta publicación — sin esto, dar like/quitar like en bucle sobre el mismo post
+      // generaría Ox2 infinito (el documento de like se borra al quitar el like, así
+      // que el candado no puede vivir ahí; vive en la publicación, que nunca se borra
       // por un simple unlike).
       const yaDioRecompensa = (snapPub.data().uidsQueYaDieronOx || []).includes(uid);
       if (!yaDioRecompensa) {
@@ -234,13 +234,13 @@ export async function alternarLike(pubId, uid, autorPubUid, autorPubNombre, miNo
       tipo: "like_publicacion",
       deUid: uid,
       deNombre: miNombre,
-      texto: `A ${miNombre} le gustÃ³ tu publicaciÃ³n`,
+      texto: `A ${miNombre} le gustó tu publicación`,
       dataExtra: { pubId }
     });
-    // El Ox2 de recompensa es aparte de la notificaciÃ³n: si falla, el like ya quedÃ³
-    // registrado igual (no queremos que un error de recompensa tumbe el like en sÃ­).
+    // El Ox2 de recompensa es aparte de la notificación: si falla, el like ya quedó
+    // registrado igual (no queremos que un error de recompensa tumbe el like en sí).
     if (debeOtorgarRecompensa) {
-      try { await otorgarOxPorLike(autorPubUid, pubId); } catch (e) { /* no crÃ­tico */ }
+      try { await otorgarOxPorLike(autorPubUid, pubId); } catch (e) { /* no crítico */ }
     }
   }
 
@@ -274,7 +274,7 @@ export async function agregarComentario(pubId, autorId, autorNombre, texto, auto
       tipo: "comentario_publicacion",
       deUid: autorId,
       deNombre: autorNombre,
-      texto: `${autorNombre} comentÃ³ tu publicaciÃ³n`,
+      texto: `${autorNombre} comentó tu publicación`,
       dataExtra: { pubId }
     });
   }
