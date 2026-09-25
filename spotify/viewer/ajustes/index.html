@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajustes del Viewer — OxygeNMedia</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<script src="/tema-inline.js"></script>
+<style>
+  :root {
+    --bg: #0f1420; --card: #1a2233; --border: #2a3550; --accent: #5b8def;
+    --accent-hover: #4a7ad9; --text: #e8ecf5; --text-dim: #8b96b0;
+    --success: #4caf7d; --radius: 14px; --card-shadow: none; --input-bg: #10182a;
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-weight-heading: 700;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--text);
+    min-height: 100vh;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: var(--font-weight-heading); }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 17px; margin: 0; }
+  button {
+    font-family: var(--font-body); background: var(--accent); color: white; border: none;
+    padding: 9px 15px; border-radius: var(--radius); font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  button:hover { background: var(--accent-hover); }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  .container { max-width: 560px; margin: 24px auto 60px; padding: 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; }
+  .card .sub { font-size: 12.5px; color: var(--text-dim); margin: 0 0 14px; }
+
+  .fila-check {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .fila-check:last-child { border-bottom: none; }
+  .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0; background: var(--border); border-radius: 999px;
+    cursor: pointer; transition: background 0.2s ease;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
+    background: white; border-radius: 50%; transition: transform 0.2s ease;
+  }
+  .switch input:checked + .slider { background: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+
+  .fila-select {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 10px;
+  }
+  .fila-select:last-child { border-bottom: none; }
+  select {
+    padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--input-bg); color: var(--text); font-size: 13px; font-family: inherit;
+  }
+
+  .msg-guardado {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--success); color: white; padding: 10px 18px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .msg-guardado.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .restablecer-row { text-align: center; margin-top: 6px; }
+  .restablecer-row button { font-size: 12.5px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚙️ Ajustes del Viewer</h1>
+  <a href="/spotify/viewer/" style="text-decoration:none;"><button class="secondary">← Volver al Viewer</button></a>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h3>Información</h3>
+    <p class="sub">Qué datos se muestran en la tarjeta.</p>
+    <div id="grupoInfo"></div>
+  </div>
+
+  <div class="card">
+    <h3>Visuales</h3>
+    <p class="sub">Efectos y ambientación de la tarjeta.</p>
+    <div id="grupoVisuales"></div>
+  </div>
+
+  <div class="card">
+    <h3>Animaciones</h3>
+    <p class="sub">Nivel de intensidad de las animaciones.</p>
+    <div id="grupoAnimaciones"></div>
+  </div>
+
+  <div class="card">
+    <h3>Portada</h3>
+    <p class="sub">Tamaño de la portada del álbum.</p>
+    <div id="grupoPortada"></div>
+  </div>
+
+  <div class="card">
+    <h3>Diseño</h3>
+    <p class="sub">Distribución general de la tarjeta.</p>
+    <div id="grupoDiseno"></div>
+  </div>
+
+  <div class="restablecer-row">
+    <button class="secondary" id="btnRestablecer">Restablecer valores predeterminados</button>
+  </div>
+
+</div>
+
+<div class="msg-guardado" id="msgGuardado">Ajustes guardados ✓</div>
+
+<script type="module" src="/spotify/viewer/ajustes/ajustes.js"></script>
+</body>
+</html>
