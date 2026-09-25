@@ -161,7 +161,13 @@ export async function obtenerCancionActual(uid) {
     album: data.item.album.name,
     imagenURL: data.item.album.images[0]?.url || "",
     urlSpotify: data.item.external_urls.spotify,
-    previewUrl: data.item.preview_url
+    previewUrl: data.item.preview_url,
+    // Campos agregados para el Spotify Viewer (/spotify/viewer/): permiten
+    // saber cuánto falta para que termine la canción y si está en pausa,
+    // sin tener que hacer polling constante — ver viewer.js.
+    duracionMs: data.item.duration_ms || 0,
+    progresoMs: typeof data.progress_ms === "number" ? data.progress_ms : 0,
+    reproduciendo: data.is_playing === true
   };
 }
 
