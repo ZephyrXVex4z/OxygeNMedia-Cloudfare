@@ -11,7 +11,7 @@
   :root {
     --bg: #0f1420; --card: #1a2233; --border: #2a3550; --accent: #5b8def;
     --accent-hover: #4a7ad9; --text: #e8ecf5; --text-dim: #8b96b0;
-    --success: #4caf7d; --radius: 14px; --card-shadow: none; --input-bg: #10182a;
+    --success: #4caf7d; --danger: #e35d5d; --radius: 14px; --card-shadow: none; --input-bg: #10182a;
     --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-weight-heading: 700;
@@ -33,6 +33,7 @@
   }
   button:hover { background: var(--accent-hover); }
   button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
   .container { max-width: 560px; margin: 24px auto 60px; padding: 0 20px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
   .card h3 { margin: 0 0 4px; font-size: 15px; }
@@ -40,7 +41,7 @@
 
   .fila-check {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 12px;
   }
   .fila-check:last-child { border-bottom: none; }
   .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
@@ -61,21 +62,54 @@
     padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 10px;
   }
   .fila-select:last-child { border-bottom: none; }
-  select {
+  select, input[type="color"], input[type="range"] {
     padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border);
     background: var(--input-bg); color: var(--text); font-size: 13px; font-family: inherit;
   }
+  input[type="range"] { padding: 0; width: 130px; }
+  input[type="color"] { padding: 2px; width: 44px; height: 34px; cursor: pointer; }
+
+  /* Temas del Viewer: grid de swatches, igual patrón visual que el selector de
+     temas globales del sitio (muro-index.html), pero con su propia clave. */
+  .grid-temas-viewer { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .tema-viewer-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 10px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: transparent; cursor: pointer; text-align: left;
+    font-size: 12.5px; color: var(--text); font-family: inherit;
+  }
+  .tema-viewer-chip.activo { border-color: var(--accent); background: rgba(91,141,239,0.08); }
+  .tema-viewer-chip .swatch {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .importador-lrc {
+    border: 1px dashed var(--border); border-radius: var(--radius);
+    padding: 16px; text-align: center; margin-top: 6px;
+  }
+  .importador-lrc input[type="file"] { display: none; }
+  .importador-lrc .campo-meta { display: flex; gap: 8px; margin-bottom: 10px; }
+  .importador-lrc .campo-meta input[type="text"] {
+    flex: 1; padding: 9px 10px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--input-bg); color: var(--text); font-size: 13px;
+  }
+  .msg-importar { font-size: 12.5px; margin-top: 10px; display: none; }
+  .msg-importar.ok { color: var(--success); display: block; }
+  .msg-importar.error { color: var(--danger); display: block; }
 
   .msg-guardado {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
     background: var(--success); color: white; padding: 10px 18px; border-radius: var(--radius);
     font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease; z-index: 10;
   }
   .msg-guardado.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .restablecer-row { text-align: center; margin-top: 6px; }
   .restablecer-row button { font-size: 12.5px; }
+  .subseccion { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .subseccion-titulo { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -88,6 +122,12 @@
 <div class="container">
 
   <div class="card">
+    <h3>Tema del Viewer</h3>
+    <p class="sub">Paleta exclusiva para esta pantalla, independiente del tema del resto del sitio.</p>
+    <div class="grid-temas-viewer" id="gridTemasViewer"></div>
+  </div>
+
+  <div class="card">
     <h3>Información</h3>
     <p class="sub">Qué datos se muestran en la tarjeta.</p>
     <div id="grupoInfo"></div>
@@ -97,6 +137,11 @@
     <h3>Visuales</h3>
     <p class="sub">Efectos y ambientación de la tarjeta.</p>
     <div id="grupoVisuales"></div>
+
+    <div class="subseccion">
+      <div class="subseccion-titulo">Espectro / ondas (decorativo)</div>
+      <div id="grupoEspectro"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -113,8 +158,27 @@
 
   <div class="card">
     <h3>Diseño</h3>
-    <p class="sub">Distribución general de la tarjeta.</p>
+    <p class="sub">Distribución general de la tarjeta. "Letra" muestra la portada a la izquierda y el panel de letra a la derecha.</p>
     <div id="grupoDiseno"></div>
+  </div>
+
+  <div class="card">
+    <h3>📝 Letra sincronizada</h3>
+    <p class="sub">Importa un archivo .lrc para la canción que suena ahora mismo. Se guarda en este dispositivo y se reconoce automáticamente la próxima vez que suene esa canción.</p>
+    <div id="grupoLetra"></div>
+
+    <div class="subseccion">
+      <div class="subseccion-titulo">Importar archivo .lrc</div>
+      <div class="importador-lrc">
+        <div class="campo-meta">
+          <input type="text" id="inputArtistaLrc" placeholder="Artista">
+          <input type="text" id="inputCancionLrc" placeholder="Nombre de la canción">
+        </div>
+        <button type="button" class="secondary" id="btnElegirArchivoLrc">Elegir archivo .lrc</button>
+        <input type="file" id="inputArchivoLrc" accept=".lrc,text/plain">
+        <div class="msg-importar" id="msgImportarLrc"></div>
+      </div>
+    </div>
   </div>
 
   <div class="restablecer-row">
