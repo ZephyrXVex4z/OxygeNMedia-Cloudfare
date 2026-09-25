@@ -1,0 +1,349 @@
+/* viewer.css — Spotify Now Playing Viewer
+   Usa exclusivamente las variables de tema ya definidas por tema-inline.js /
+   temas.js (--bg, --card, --border, --accent, --text, --text-dim, --radius,
+   --font-display, --font-body). No define paleta propia. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+.viewer-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+header.viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+header.viewer-header h1 {
+  font-size: 16px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-heading, 700);
+}
+header.viewer-header .acciones { display: flex; gap: 8px; }
+header.viewer-header button {
+  font-family: var(--font-body);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+}
+header.viewer-header button:hover { background: var(--card); }
+
+.viewer-stage {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 40px;
+  overflow: hidden;
+}
+
+/* Fondo dinámico: color extraído de la portada (canvas 1x1) como gradiente radial
+   detrás de la tarjeta. Se desactiva por completo con [data-fondo="off"]. */
+.viewer-fondo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transition: background 0.6s ease;
+  pointer-events: none;
+}
+[data-fondo="off"] .viewer-fondo { display: none; }
+
+/* ============ TARJETA PRINCIPAL ============ */
+
+.np-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.4);
+  box-shadow: var(--card-shadow, none);
+  padding: 28px 26px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Diseños alternativos */
+[data-diseno="compacto"] .np-card { max-width: 320px; padding: 18px 18px 16px; }
+[data-diseno="tarjeta"] .np-card { max-width: 420px; flex-direction: row; text-align: left; align-items: center; gap: 18px; }
+[data-diseno="tarjeta"] .np-info { align-items: flex-start; }
+[data-diseno="fullscreen"] .viewer-stage { padding: 0; }
+[data-diseno="fullscreen"] .np-card {
+  max-width: 100%;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  border-radius: 0;
+  border: none;
+  justify-content: center;
+}
+
+/* ============ PORTADA ============ */
+
+.np-portada-wrap {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  border-radius: calc(var(--radius) * 0.9);
+  overflow: hidden;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+  background: var(--input-bg, rgba(255,255,255,0.04));
+}
+[data-portada="grande"] .np-portada-wrap { width: 260px; height: 260px; }
+[data-portada="mediana"] .np-portada-wrap { width: 180px; height: 180px; }
+[data-portada="pequena"] .np-portada-wrap { width: 96px; height: 96px; margin-bottom: 14px; }
+[data-portada="oculta"] .np-portada-wrap { display: none; }
+[data-diseno="tarjeta"] .np-portada-wrap { margin-bottom: 0; width: 96px; height: 96px; }
+[data-diseno="compacto"] .np-portada-wrap { width: 150px; height: 150px; }
+
+.np-portada {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.np-portada-glow {
+  position: absolute;
+  inset: -20%;
+  filter: blur(30px);
+  opacity: 0.55;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.1);
+}
+[data-glow="off"] .np-portada-glow { display: none; }
+
+/* ============ TEXTO ============ */
+
+.np-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
+
+.np-cancion {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-heading, 700);
+  font-size: 19px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+.np-artista {
+  font-size: 14.5px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+.np-album {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 6px;
+}
+[data-mostrar-album="off"] .np-album { display: none; }
+[data-mostrar-cancion="off"] .np-cancion { display: none; }
+[data-mostrar-artista="off"] .np-artista { display: none; }
+
+.np-estado-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  margin: 10px 0 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+[data-diseno="tarjeta"] .np-estado-row { justify-content: flex-start; }
+
+.np-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-dim);
+  flex-shrink: 0;
+}
+.np-dot.reproduciendo {
+  background: var(--success, #4caf7d);
+  box-shadow: 0 0 0 0 rgba(76,175,125,0.5);
+  animation: np-pulso 1.8s ease-in-out infinite;
+}
+@keyframes np-pulso {
+  0% { box-shadow: 0 0 0 0 rgba(76,175,125,0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(76,175,125,0); }
+  100% { box-shadow: 0 0 0 0 rgba(76,175,125,0); }
+}
+
+.np-duracion {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+[data-mostrar-duracion="off"] .np-duracion { display: none; }
+
+.np-linea {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--border);
+  margin: 6px 0 14px;
+  overflow: hidden;
+}
+[data-diseno="tarjeta"] .np-linea { display: none; }
+.np-linea-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.4s linear;
+}
+
+.np-btn-spotify {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: var(--radius);
+  margin-top: 6px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.np-btn-spotify:hover { background: var(--accent-hover, var(--accent)); }
+.np-btn-spotify:active { transform: scale(0.97); }
+[data-mostrar-boton="off"] .np-btn-spotify { display: none; }
+
+/* ============ ESTADOS: sin música / desconectado / cargando ============ */
+
+.np-estado-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px 4px;
+  text-align: center;
+}
+.np-estado-vacio .icono { font-size: 34px; opacity: 0.7; }
+.np-estado-vacio h2 { font-size: 16px; margin: 4px 0 0; font-family: var(--font-display); }
+.np-estado-vacio p { font-size: 13px; color: var(--text-dim); margin: 0; max-width: 260px; line-height: 1.5; }
+.np-estado-vacio button {
+  margin-top: 10px;
+  font-family: var(--font-body);
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 11px 20px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Skeleton de carga */
+.np-skeleton { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.sk-block {
+  background: linear-gradient(90deg, var(--border) 25%, var(--input-bg, rgba(255,255,255,0.08)) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes sk-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.sk-portada { width: 220px; height: 220px; border-radius: calc(var(--radius) * 0.9); margin-bottom: 20px; }
+.sk-linea1 { width: 70%; height: 18px; margin-bottom: 8px; }
+.sk-linea2 { width: 50%; height: 14px; margin-bottom: 4px; }
+.sk-linea3 { width: 40%; height: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .np-dot.reproduciendo { animation: none; }
+  .sk-block { animation: none; }
+  .np-portada, .np-cancion, .np-artista { transition: none; }
+}
+
+/* ============ EFECTOS AMBIENTALES (modo medio/potente) ============ */
+
+.np-particulas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.np-particula {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  animation: np-particula-flotar linear infinite;
+}
+@keyframes np-particula-flotar {
+  0% { transform: translateY(10%); opacity: 0; }
+  15% { opacity: 0.5; }
+  85% { opacity: 0.3; }
+  100% { transform: translateY(-120%); opacity: 0; }
+}
+
+/* Transición de cambio de canción */
+.np-info.cambiando .np-cancion,
+.np-info.cambiando .np-artista { opacity: 0; }
+.np-portada.cambiando { opacity: 0; transform: scale(0.96); }
+
+/* Animación de entrada nivel medio/potente */
+[data-anim="medio"] .np-card, [data-anim="potente"] .np-card {
+  animation: np-entrada 0.5s ease;
+}
+@keyframes np-entrada {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+[data-anim="ninguna"] .np-card,
+[data-anim="ninguna"] * { animation: none !important; }
+
+/* ============ RESPONSIVE ============ */
+
+@media (max-width: 480px) {
+  .np-card { max-width: 100%; padding: 22px 18px 20px; }
+  .np-portada-wrap { width: 180px; height: 180px; }
+  [data-portada="grande"] .np-portada-wrap { width: 210px; height: 210px; }
+  .np-cancion { font-size: 17px; }
+  [data-diseno="tarjeta"] .np-card { flex-direction: column; text-align: center; }
+  [data-diseno="tarjeta"] .np-info { align-items: center; }
+  [data-diseno="tarjeta"] .np-portada-wrap { width: 150px; height: 150px; margin-bottom: 14px; }
+}
+
+.hidden { display: none !important; }
+
+a, button { -webkit-tap-highlight-color: transparent; }
