@@ -418,3 +418,47 @@ window.addEventListener("storage", (e) => {
     aplicarAjustesVisuales();
   }
 });
+
+// ============ PANTALLA COMPLETA ============
+// Fullscreen API nativa del navegador (oculta barra de dirección/pestañas),
+// independiente del ajuste de "Diseño: Fullscreen" (que solo cambia el layout
+// CSS de la tarjeta). Útil para dejar el Viewer en un segundo monitor o al
+// hacer streaming. Con prefijos para compatibilidad con Safari/iOS.
+
+const btnPantallaCompleta = document.getElementById("btnPantallaCompleta");
+
+function elementoFullscreenActual() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+async function alternarPantallaCompleta() {
+  try {
+    if (!elementoFullscreenActual()) {
+      const shell = document.querySelector(".viewer-shell");
+      if (shell.requestFullscreen) await shell.requestFullscreen();
+      else if (shell.webkitRequestFullscreen) shell.webkitRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  } catch {
+    // El navegador puede rechazar la solicitud (ej. sin gesto de usuario directo,
+    // o no soportado en este contexto) — no es un error que deba mostrarse.
+  }
+}
+
+function actualizarBotonFullscreen() {
+  const activo = !!elementoFullscreenActual();
+  btnPantallaCompleta.textContent = activo ? "⛶ Salir de pantalla completa" : "⛶ Pantalla completa";
+  btnPantallaCompleta.setAttribute("aria-pressed", String(activo));
+}
+
+if (btnPantallaCompleta) {
+  btnPantallaCompleta.addEventListener("click", alternarPantallaCompleta);
+  document.addEventListener("fullscreenchange", actualizarBotonFullscreen);
+  document.addEventListener("webkitfullscreenchange", actualizarBotonFullscreen);
+
+  // Salir con Escape ya lo maneja el navegador de forma nativa; no se requiere
+  // lógica extra. Si el ajuste "Sin animaciones" está activo, el fullscreen no
+  // se ve afectado por completo — no bloquea la funcionalidad.
+}
