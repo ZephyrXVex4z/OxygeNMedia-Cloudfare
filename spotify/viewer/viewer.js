@@ -5,23 +5,43 @@
 import { observarSesion, cuentaBloqueada } from "../../auth.js";
 import { obtenerCancionActual, iniciarConexionSpotify } from "../../spotify.js";
 import { leerAjustesViewer } from "./ajustes-shared.js";
+import { aplicarTemaViewer, obtenerTemaViewerGuardado } from "./viewer-temas.js";
+import { crearEspectro } from "./espectro.js";
+import { obtenerLetra, indiceLineaActiva } from "./lrc-parser.js";
 
 // ============ CONFIGURACIÓN DE POLLING ============
 
 const MARGEN_SEGURIDAD_MS = 2000;       // colchón tras el fin estimado de la canción
 const INTERVALO_PAUSADO_MS = 12000;     // cada cuánto revisar si sigue pausado
 const INTERVALO_SIN_REPRODUCCION_MS = 20000; // cada cuánto revisar si empezó a sonar algo
-const INTERVALO_MAXIMO_MS = 60000;      // techo por si duration_ms viene raro (evita timers eternos o inexistentes)
+const INTERVALO_MAXIMO_MS = 60000;      // techo por si duration_ms viene raro
 const INTERVALO_MINIMO_MS = 3000;       // piso para no encadenar consultas casi inmediatas
+const INTERVALO_SEGUIMIENTO_LETRA_MS = 900; // solo corre mientras hay letra activa visible
 
 let uidActual = null;
 let timerId = null;
-let controladorFetch = null;
 let cancionAnterior = null; // para detectar cambio real de pista
 let destruido = false;
 
+// Estado de reproducción "en vivo" estimado, para el seguimiento de letra entre
+// una consulta a Spotify y la siguiente (no es un nuevo polling a Spotify).
+let progresoEstimadoMs = 0;
+let duracionActualMs = 0;
+let reproduciendoActual = false;
+let ultimaMarcaTiempo = 0;
+let timerLetra = null;
+
+let letraActualParseada = null; // [{ms, texto}] o null
+let indiceLineaAnterior = -1;
+let instanciaEspectro = null;
+
 const elStage = document.getElementById("viewerStage");
 const elFondo = document.getElementById("viewerFondo");
+
+// ============ TEMA EXCLUSIVO DEL VIEWER ============
+// Se aplica antes que nada más, para que no haya flash del tema global sin
+// mapear a --v-*.
+aplicarTemaViewer(obtenerTemaViewerGuardado());
 
 // ============ SESIÓN ============
 
@@ -41,19 +61,23 @@ observarSesion((user, perfil) => {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && uidActual) {
-    // Al volver a la pestaña, resincroniza de inmediato en vez de esperar al timer.
     cancelarTimerPendiente();
     consultarYProgramar();
   } else if (document.visibilityState === "hidden") {
-    // No apagamos el timer por completo (podría perderse el próximo cambio de
-    // canción por mucho tiempo), pero evitamos trabajo visual innecesario.
     detenerAnimacionesAmbientales();
+    detenerSeguimientoLetra();
+    if (instanciaEspectro) instanciaEspectro.detener();
   }
 });
 
-window.addEventListener("beforeunload", () => { destruido = true; cancelarTimerPendiente(); });
+window.addEventListener("beforeunload", () => {
+  destruido = true;
+  cancelarTimerPendiente();
+  detenerSeguimientoLetra();
+  if (instanciaEspectro) instanciaEspectro.destruir();
+});
 
-// ============ CICLO PRINCIPAL ============
+// ============ CICLO PRINCIPAL (consulta a Spotify) ============
 
 function iniciarCicloDeConsulta() {
   consultarYProgramar();
@@ -61,7 +85,6 @@ function iniciarCicloDeConsulta() {
 
 function cancelarTimerPendiente() {
   if (timerId) { clearTimeout(timerId); timerId = null; }
-  if (controladorFetch) { controladorFetch.abort(); controladorFetch = null; }
 }
 
 async function consultarYProgramar() {
@@ -70,12 +93,8 @@ async function consultarYProgramar() {
 
   let datos = null;
   try {
-    // obtenerCancionActual no acepta señal de abort internamente (usa fetch propio
-    // dentro de spotify.js), así que solo protegemos contra solapamiento con el
-    // candado de timerId/controladorFetch a nivel de este módulo.
     datos = await obtenerCancionActual(uidActual);
   } catch (err) {
-    // Token vencido sin refresh posible, cuenta desconectada, etc.
     mostrarErrorSuave();
     programarSiguienteConsulta(INTERVALO_SIN_REPRODUCCION_MS);
     return;
@@ -84,21 +103,31 @@ async function consultarYProgramar() {
   renderizarEstado(datos);
 
   if (!datos) {
+    reproduciendoActual = false;
+    if (instanciaEspectro) instanciaEspectro.setReproduciendo(false);
+    detenerSeguimientoLetra();
     programarSiguienteConsulta(INTERVALO_SIN_REPRODUCCION_MS);
     return;
   }
 
+  // Sincroniza el estado "en vivo" usado por el seguimiento de letra
+  progresoEstimadoMs = datos.progresoMs || 0;
+  duracionActualMs = datos.duracionMs || 0;
+  reproduciendoActual = !!datos.reproduciendo;
+  ultimaMarcaTiempo = performance.now();
+
+  if (instanciaEspectro) instanciaEspectro.setReproduciendo(reproduciendoActual);
+
   if (!datos.reproduciendo) {
+    detenerSeguimientoLetra();
     programarSiguienteConsulta(INTERVALO_PAUSADO_MS);
     return;
   }
 
-  // Reproduciendo: calcula cuánto falta para que termine y programa la siguiente
-  // consulta justo después de ese momento (con margen de seguridad), en vez de
-  // hacer polling constante.
+  iniciarSeguimientoLetraSiAplica();
+
   const restanteMs = (datos.duracionMs || 0) - (datos.progresoMs || 0);
   let espera = restanteMs + MARGEN_SEGURIDAD_MS;
-
   if (!Number.isFinite(espera) || espera <= 0) espera = INTERVALO_MINIMO_MS;
   espera = Math.max(INTERVALO_MINIMO_MS, Math.min(espera, INTERVALO_MAXIMO_MS));
 
@@ -110,12 +139,13 @@ function programarSiguienteConsulta(ms) {
   timerId = setTimeout(consultarYProgramar, ms);
 }
 
-// ============ RENDER ============
+// ============ RENDER PRINCIPAL ============
 
 function renderizarEstado(datos) {
   if (!datos) {
     mostrarSinReproduccion();
     cancionAnterior = null;
+    letraActualParseada = null;
     return;
   }
 
@@ -124,29 +154,52 @@ function renderizarEstado(datos) {
     cancionAnterior.artista !== datos.artista;
 
   mostrarTarjetaNowPlaying(datos, esCancionNueva);
+
+  if (esCancionNueva) {
+    letraActualParseada = obtenerLetra(datos.artista, datos.cancion);
+    indiceLineaAnterior = -1;
+    renderPanelLetra(datos);
+  }
+
   cancionAnterior = datos;
 }
 
-function plantillaBase() {
+function plantillaBase(ajustes) {
+  const usarLayoutLetra = ajustes.diseno === "letra";
+
+  const bloqueInfo = `
+    <div class="np-portada-wrap">
+      <div class="np-portada-glow" id="npGlow" aria-hidden="true"></div>
+      <img class="np-portada" id="npPortada" alt="">
+    </div>
+    <div class="np-info" id="npInfo">
+      <div class="np-cancion" id="npCancion"></div>
+      <div class="np-artista" id="npArtista"></div>
+      <div class="np-album" id="npAlbum"></div>
+      <div class="np-estado-row">
+        <span class="np-dot" id="npDot"></span>
+        <span id="npEstadoTexto"></span>
+      </div>
+      <div class="np-linea"><div class="np-linea-fill" id="npLineaFill"></div></div>
+      <div class="np-duracion" id="npDuracion"></div>
+      <div class="np-espectro-wrap" id="npEspectroWrap">
+        <canvas class="np-espectro-canvas" id="npEspectroCanvas"></canvas>
+      </div>
+      <a class="np-btn-spotify" id="npBtnSpotify" href="#" target="_blank" rel="noopener noreferrer">
+        🎧 Escuchar en Spotify
+      </a>
+    </div>
+  `;
+
+  if (!usarLayoutLetra) {
+    return `<div class="np-card" role="region" aria-label="Reproduciendo ahora">${bloqueInfo}</div>`;
+  }
+
   return `
     <div class="np-card" role="region" aria-label="Reproduciendo ahora">
-      <div class="np-portada-wrap">
-        <div class="np-portada-glow" id="npGlow" aria-hidden="true"></div>
-        <img class="np-portada" id="npPortada" alt="">
-      </div>
-      <div class="np-info" id="npInfo">
-        <div class="np-cancion" id="npCancion"></div>
-        <div class="np-artista" id="npArtista"></div>
-        <div class="np-album" id="npAlbum"></div>
-        <div class="np-estado-row">
-          <span class="np-dot" id="npDot"></span>
-          <span id="npEstadoTexto"></span>
-        </div>
-        <div class="np-linea"><div class="np-linea-fill" id="npLineaFill"></div></div>
-        <div class="np-duracion" id="npDuracion"></div>
-        <a class="np-btn-spotify" id="npBtnSpotify" href="#" target="_blank" rel="noopener noreferrer">
-          🎧 Escuchar en Spotify
-        </a>
+      <div class="np-lado-info">${bloqueInfo}</div>
+      <div class="np-lado-letra" id="npLadoLetra">
+        <!-- renderPanelLetra() llena esto -->
       </div>
     </div>
   `;
@@ -156,8 +209,10 @@ let estadoActualDom = null; // "vacio" | "cargando" | "np" | "sinsesion" | "erro
 
 function asegurarPlantilla() {
   if (estadoActualDom === "np") return;
-  elStage.innerHTML = plantillaBase();
+  const ajustes = leerAjustesViewer();
+  elStage.innerHTML = plantillaBase(ajustes);
   estadoActualDom = "np";
+  configurarEspectroEnDom(ajustes);
 }
 
 function formatearDuracion(ms) {
@@ -234,9 +289,6 @@ function actualizarFondoDinamico(imagenURL) {
   }).catch(() => {});
 }
 
-// Extrae un color promedio aproximado de la portada, reescalándola a 1x1px en un
-// canvas — barato en CPU, sin descargar/procesar la imagen a tamaño completo más
-// de una vez por URL (se cachea por URL).
 const cacheColores = new Map();
 function extraerColorAproximado(url) {
   if (cacheColores.has(url)) return Promise.resolve(cacheColores.get(url));
@@ -255,12 +307,133 @@ function extraerColorAproximado(url) {
         cacheColores.set(url, color);
         resolve(color);
       } catch {
-        resolve(null); // CORS u otro fallo — se ignora, el fondo simplemente no se colorea
+        resolve(null);
       }
     };
     img.onerror = () => resolve(null);
     img.src = url;
   });
+}
+
+// ============ ESPECTRO / ONDAS (decorativo, no sincronizado a audio) ============
+
+function configurarEspectroEnDom(ajustes) {
+  const wrap = document.getElementById("npEspectroWrap");
+  const canvas = document.getElementById("npEspectroCanvas");
+  if (!wrap || !canvas) return;
+
+  if (!ajustes.espectroActivo) {
+    wrap.classList.add("hidden");
+    if (instanciaEspectro) { instanciaEspectro.destruir(); instanciaEspectro = null; }
+    return;
+  }
+
+  wrap.classList.remove("hidden");
+
+  if (instanciaEspectro) instanciaEspectro.destruir();
+
+  const colorTema = getComputedStyle(document.documentElement).getPropertyValue("--v-espectro").trim() || "#5b8def";
+  instanciaEspectro = crearEspectro(canvas, {
+    estilo: ajustes.espectroEstilo,
+    color: ajustes.espectroUsaColorTema ? colorTema : (ajustes.espectroColor || colorTema),
+    intensidad: ajustes.espectroIntensidad
+  });
+
+  const prefiereReducido = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!prefiereReducido && document.visibilityState === "visible") {
+    instanciaEspectro.setReproduciendo(reproduciendoActual);
+    instanciaEspectro.iniciar();
+  }
+}
+
+// ============ LETRA SINCRONIZADA (importada en .lrc) ============
+
+function renderPanelLetra(datos) {
+  const contenedor = document.getElementById("npLadoLetra");
+  if (!contenedor) return; // diseño actual no es "letra"
+
+  const ajustes = leerAjustesViewer();
+
+  if (!ajustes.letraActiva || !letraActualParseada || letraActualParseada.length === 0) {
+    contenedor.innerHTML = `
+      <div class="np-letra-vacia">
+        <div class="icono">📝</div>
+        <p>No hay letra importada para esta canción.</p>
+        <a href="/spotify/viewer/ajustes/">Importar un archivo .lrc</a>
+      </div>
+    `;
+    return;
+  }
+
+  const scrollDiv = document.createElement("div");
+  scrollDiv.className = "np-letra-scroll";
+  scrollDiv.id = "npLetraScroll";
+  scrollDiv.innerHTML = letraActualParseada.map((linea, i) =>
+    `<p class="np-letra-linea" data-idx="${i}">${escapeHtml(linea.texto)}</p>`
+  ).join("");
+
+  contenedor.innerHTML = "";
+  contenedor.appendChild(scrollDiv);
+  indiceLineaAnterior = -1;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Seguimiento de letra: NO hace polling a Spotify. Usa el último progresoMs
+// conocido + tiempo transcurrido localmente para estimar dónde va la canción, y
+// solo actualiza qué línea se resalta. Se detiene si no hay letra visible, si
+// está pausado, o si la pestaña está oculta.
+function iniciarSeguimientoLetraSiAplica() {
+  const ajustes = leerAjustesViewer();
+  if (ajustes.diseno !== "letra" || !ajustes.letraActiva) return;
+  if (!letraActualParseada || letraActualParseada.length === 0) return;
+  if (timerLetra) return; // ya corriendo
+
+  const prefiereReducido = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const paso = () => {
+    if (destruido || document.visibilityState === "hidden" || !reproduciendoActual) {
+      timerLetra = null;
+      return;
+    }
+    const transcurrido = performance.now() - ultimaMarcaTiempo;
+    const progresoActualEstimado = progresoEstimadoMs + transcurrido;
+    const idx = indiceLineaActiva(letraActualParseada, progresoActualEstimado);
+
+    if (idx !== indiceLineaAnterior) {
+      actualizarLineaActivaEnDom(idx, !prefiereReducido);
+      indiceLineaAnterior = idx;
+    }
+    timerLetra = setTimeout(paso, INTERVALO_SEGUIMIENTO_LETRA_MS);
+  };
+  paso();
+}
+
+function detenerSeguimientoLetra() {
+  if (timerLetra) { clearTimeout(timerLetra); timerLetra = null; }
+}
+
+function actualizarLineaActivaEnDom(idxActiva, conScroll) {
+  const scrollDiv = document.getElementById("npLetraScroll");
+  if (!scrollDiv) return;
+
+  const lineas = scrollDiv.querySelectorAll(".np-letra-linea");
+  lineas.forEach((el, i) => {
+    el.classList.toggle("activa", i === idxActiva);
+    el.classList.toggle("pasada", i < idxActiva);
+  });
+
+  if (idxActiva >= 0 && conScroll) {
+    const elActiva = lineas[idxActiva];
+    if (elActiva) {
+      const offset = elActiva.offsetTop - scrollDiv.clientHeight / 2 + elActiva.clientHeight / 2;
+      scrollDiv.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
+    }
+  }
 }
 
 // ============ ESTADOS ALTERNATIVOS ============
@@ -283,6 +456,7 @@ function mostrarSkeleton() {
 function mostrarSinReproduccion() {
   if (estadoActualDom === "vacio") return;
   estadoActualDom = "vacio";
+  if (instanciaEspectro) { instanciaEspectro.destruir(); instanciaEspectro = null; }
   elStage.innerHTML = `
     <div class="np-card">
       <div class="np-estado-vacio">
@@ -326,19 +500,15 @@ function mostrarNoSesion() {
 }
 
 function mostrarErrorSuave() {
-  // No se revela nada técnico — se trata igual que "sin reproducción" para el
-  // usuario, salvo que reintenta más pronto.
   if (estadoActualDom === "vacio") return;
   mostrarSinReproduccion();
 }
 
-// Muestra el skeleton inicial mientras llega el primer resultado
 mostrarSkeleton();
 
-// ============ ANIMACIONES AMBIENTALES (partículas del modo medio/potente) ============
+// ============ AJUSTES VISUALES GENERALES (data-attrs + partículas + animación) ============
 
 let animacionesActivas = false;
-let idsParticulas = [];
 
 function detenerAnimacionesAmbientales() {
   animacionesActivas = false;
@@ -357,6 +527,8 @@ function aplicarAjustesVisuales() {
   root.dataset.mostrarBoton = ajustes.mostrarBoton === false ? "off" : "on";
   root.dataset.portada = ajustes.tamanoPortada || "mediana";
   root.dataset.diseno = ajustes.diseno || "centrado";
+  root.dataset.letraTamano = ajustes.letraTamanoTexto || "mediano";
+  root.dataset.letraDegradado = ajustes.letraDegradado === false ? "off" : "on";
 
   const nivelAnim = resolverNivelAnimacion(ajustes.animaciones || "auto");
   root.dataset.anim = nivelAnim;
@@ -367,6 +539,14 @@ function aplicarAjustesVisuales() {
   if (particulasPedidas && !prefiereReducido) {
     iniciarParticulas(nivelAnim === "potente" ? 18 : 9);
   }
+
+  // Si ya existe la plantilla renderizada (cambio de ajustes en vivo desde otra
+  // pestaña), fuerza reconstrucción para reflejar diseño/espectro nuevos.
+  if (estadoActualDom === "np" && cancionAnterior) {
+    estadoActualDom = null; // fuerza a asegurarPlantilla() reconstruir
+    mostrarTarjetaNowPlaying(cancionAnterior, false);
+    renderPanelLetra(cancionAnterior);
+  }
 }
 
 function resolverNivelAnimacion(preferencia) {
@@ -375,10 +555,8 @@ function resolverNivelAnimacion(preferencia) {
   const prefiereReducido = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefiereReducido) return "ninguna";
 
-  // Detección razonable y no invasiva: núcleos lógicos + memoria aproximada,
-  // ambos expuestos de forma estándar y sin pedir permisos.
   const nucleos = navigator.hardwareConcurrency || 4;
-  const memoria = navigator.deviceMemory || 4; // GB aproximados, Chrome/Edge only; fallback 4
+  const memoria = navigator.deviceMemory || 4;
 
   if (nucleos <= 2 || memoria <= 2) return "ligero";
   if (nucleos >= 8 && memoria >= 8) return "potente";
@@ -411,19 +589,17 @@ function iniciarParticulas(cantidad) {
   }
 }
 
-// Reaplicar ajustes si el usuario los cambia en otra pestaña (localStorage se
-// comparte entre pestañas del mismo origen) y vuelve a esta.
+// Reaplicar ajustes si el usuario los cambia en otra pestaña o en /ajustes/
 window.addEventListener("storage", (e) => {
   if (e.key === "oxygenmedia_spotify_viewer_ajustes") {
     aplicarAjustesVisuales();
   }
+  if (e.key === "oxygenmedia_spotify_viewer_tema") {
+    aplicarTemaViewer(obtenerTemaViewerGuardado());
+  }
 });
 
 // ============ PANTALLA COMPLETA ============
-// Fullscreen API nativa del navegador (oculta barra de dirección/pestañas),
-// independiente del ajuste de "Diseño: Fullscreen" (que solo cambia el layout
-// CSS de la tarjeta). Útil para dejar el Viewer en un segundo monitor o al
-// hacer streaming. Con prefijos para compatibilidad con Safari/iOS.
 
 const btnPantallaCompleta = document.getElementById("btnPantallaCompleta");
 
@@ -442,8 +618,7 @@ async function alternarPantallaCompleta() {
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     }
   } catch {
-    // El navegador puede rechazar la solicitud (ej. sin gesto de usuario directo,
-    // o no soportado en este contexto) — no es un error que deba mostrarse.
+    // Rechazo del navegador (sin gesto directo, no soportado, etc.) — se ignora.
   }
 }
 
@@ -457,8 +632,4 @@ if (btnPantallaCompleta) {
   btnPantallaCompleta.addEventListener("click", alternarPantallaCompleta);
   document.addEventListener("fullscreenchange", actualizarBotonFullscreen);
   document.addEventListener("webkitfullscreenchange", actualizarBotonFullscreen);
-
-  // Salir con Escape ya lo maneja el navegador de forma nativa; no se requiere
-  // lógica extra. Si el ajuste "Sin animaciones" está activo, el fullscreen no
-  // se ve afectado por completo — no bloquea la funcionalidad.
 }
