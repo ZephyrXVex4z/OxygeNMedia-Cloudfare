@@ -25,7 +25,19 @@ export const AJUSTES_DEFAULT = {
   // Portada
   tamanoPortada: "mediana", // "grande" | "mediana" | "pequena" | "oculta"
   // Diseño
-  diseno: "centrado" // "centrado" | "compacto" | "tarjeta" | "fullscreen"
+  diseno: "centrado", // "centrado" | "compacto" | "tarjeta" | "fullscreen" | "letra"
+
+  // ============ ESPECTRO / ONDAS (decorativo, no sincronizado a audio real) ============
+  espectroActivo: false,
+  espectroEstilo: "barras",   // "barras" | "ondas" | "circular"
+  espectroIntensidad: 1,      // 0.4 (sutil) a 1.4 (intenso)
+  espectroUsaColorTema: true, // si es false, usa espectroColor manual
+  espectroColor: "#5b8def",   // color manual, solo aplica si espectroUsaColorTema es false
+
+  // ============ LETRA SINCRONIZADA (importada manualmente en .lrc) ============
+  letraActiva: false,          // muestra el panel de letra si hay una importada para la canción actual
+  letraTamanoTexto: "mediano", // "pequeno" | "mediano" | "grande"
+  letraDegradado: true         // fade arriba/abajo en las líneas fuera de foco
 };
 
 export function leerAjustesViewer() {
