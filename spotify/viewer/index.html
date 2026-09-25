@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Reproduciendo ahora — OxygeNMedia</title>
+<meta name="description" content="Mira en tiempo real qué estás escuchando en Spotify, con OxygeNMedia.">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<script src="/tema-inline.js"></script>
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="/spotify/viewer/viewer.css">
+</head>
+<body>
+
+<div class="viewer-shell">
+  <header class="viewer-header">
+    <h1>🎧 Reproduciendo ahora</h1>
+    <div class="acciones">
+      <a href="/spotify/viewer/ajustes/" style="text-decoration:none;"><button type="button">⚙️ Ajustes</button></a>
+      <a href="/muro" style="text-decoration:none;"><button type="button">Volver al sitio</button></a>
+    </div>
+  </header>
+
+  <main class="viewer-stage" id="viewerStage" aria-live="polite">
+    <!-- viewer.js inyecta aquí el estado actual (skeleton, tarjeta, o mensaje) -->
+  </main>
+  <div class="viewer-fondo" id="viewerFondo" aria-hidden="true"></div>
+</div>
+
+<script type="module" src="/spotify/viewer/viewer.js"></script>
+</body>
+</html>
+    
