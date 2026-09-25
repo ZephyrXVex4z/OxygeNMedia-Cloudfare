@@ -7,6 +7,21 @@
 
 * { box-sizing: border-box; }
 
+/* Fallback: si por lo que sea las variables --v-* aún no se aplicaron (script
+   bloqueado, error, etc.), estos valores evitan el flash blanco/negro puro.
+   viewer-tema-inline.js sobreescribe esto de forma síncrona en el <head>. */
+:root {
+  --v-bg: #0f1420;
+  --v-card: #1a2233;
+  --v-border: #2a3550;
+  --v-accent: #5b8def;
+  --v-accent-hover: #4a7ad9;
+  --v-text: #e8ecf5;
+  --v-text-dim: #8b96b0;
+  --v-radius: 14px;
+  --v-espectro: #5b8def;
+}
+
 html, body {
   margin: 0;
   min-height: 100%;
