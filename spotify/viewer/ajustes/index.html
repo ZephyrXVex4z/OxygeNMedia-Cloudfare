@@ -94,6 +94,14 @@
     flex: 1; padding: 9px 10px; border-radius: var(--radius); border: 1px solid var(--border);
     background: var(--input-bg); color: var(--text); font-size: 13px;
   }
+  .textarea-lrc {
+    width: 100%; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--input-bg); color: var(--text); font-size: 13px; font-family: inherit;
+    resize: vertical; margin-bottom: 10px;
+  }
+  .campo-duracion-manual { margin-bottom: 10px; }
+  .campo-duracion-manual label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; line-height: 1.4; }
+  .campo-duracion-manual input { width: 110px; }
   .msg-importar { font-size: 12.5px; margin-top: 10px; display: none; }
   .msg-importar.ok { color: var(--success); display: block; }
   .msg-importar.error { color: var(--danger); display: block; }
@@ -174,10 +182,21 @@
           <input type="text" id="inputArtistaLrc" placeholder="Artista">
           <input type="text" id="inputCancionLrc" placeholder="Nombre de la canción">
         </div>
-        <button type="button" class="secondary" id="btnElegirArchivoLrc">Elegir archivo .lrc</button>
-        <input type="file" id="inputArchivoLrc" accept=".lrc,text/plain">
+        <button type="button" class="secondary" id="btnElegirArchivoLrc">Elegir archivo .lrc o .txt</button>
+        <input type="file" id="inputArchivoLrc" accept=".lrc,.txt,text/plain">
         <div class="msg-importar" id="msgImportarLrc"></div>
       </div>
+    </div>
+
+    <div class="subseccion">
+      <div class="subseccion-titulo">O pega el texto / LRC directamente</div>
+      <textarea id="textareaLrc" class="textarea-lrc" rows="6"
+        placeholder="Pega aquí la letra. Puede ser texto simple, LRC por línea ([00:12.50]texto) o LRC por palabra ([00:12.50]Esta [00:12.80]es...)."></textarea>
+      <div class="campo-duracion-manual">
+        <label for="inputDuracionManualLrc">Si pegaste texto sin sincronización, puedes fijar una duración total (segundos) para estimar el ritmo:</label>
+        <input type="number" id="inputDuracionManualLrc" min="1" step="1" placeholder="Opcional, ej. 210">
+      </div>
+      <button type="button" id="btnImportarPegado">Importar texto pegado</button>
     </div>
   </div>
 
