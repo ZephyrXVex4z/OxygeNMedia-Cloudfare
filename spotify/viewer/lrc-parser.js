@@ -353,4 +353,4 @@ export function progresoDentroDePalabra(linea, idxPalabra, progresoMs) {
   const t = (progresoMs - p.ms) / (p.msFin - p.ms);
   return Math.max(0, Math.min(1, t));
 }
-s
+
