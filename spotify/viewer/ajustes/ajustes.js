@@ -5,7 +5,7 @@
 
 import { leerAjustesViewer, guardarAjustesViewer, AJUSTES_DEFAULT } from "../ajustes-shared.js";
 import { TEMAS_VIEWER, obtenerTemaViewerGuardado, guardarTemaViewer } from "../viewer-temas.js";
-import { parsearLRC, guardarLetra } from "../lrc-parser.js";
+import { parsearLRC, guardarLetra, aplicarDuracionManual } from "../lrc-parser.js";
 
 let ajustes = leerAjustesViewer();
 
@@ -247,6 +247,7 @@ const inputCancionLrc = document.getElementById("inputCancionLrc");
 const inputArchivoLrc = document.getElementById("inputArchivoLrc");
 const btnElegirArchivoLrc = document.getElementById("btnElegirArchivoLrc");
 const msgImportarLrc = document.getElementById("msgImportarLrc");
+const inputDuracionManual = document.getElementById("inputDuracionManualLrc");
 
 btnElegirArchivoLrc.addEventListener("click", () => inputArchivoLrc.click());
 
@@ -274,22 +275,77 @@ inputArchivoLrc.addEventListener("change", () => {
 
   const lector = new FileReader();
   lector.onload = () => {
-    const lineasParsed = parsearLRC(lector.result);
-    if (lineasParsed.length === 0) {
-      mostrarMsgImportar("No se encontraron líneas con marca de tiempo en el archivo. Verifica que sea un .lrc válido.", "error");
-      return;
-    }
-    const ok = guardarLetra(artista, cancion, lineasParsed);
-    if (ok) {
-      mostrarMsgImportar(`Letra importada: ${lineasParsed.length} líneas guardadas para "${cancion}" — ${artista}.`, "ok");
-      inputArchivoLrc.value = "";
-    } else {
-      mostrarMsgImportar("No se pudo guardar la letra (almacenamiento local lleno o bloqueado).", "error");
-    }
+    procesarLetraCruda(lector.result, artista, cancion);
+    inputArchivoLrc.value = "";
   };
   lector.onerror = () => mostrarMsgImportar("No se pudo leer el archivo.", "error");
   lector.readAsText(archivo, "utf-8");
 });
+
+// ============ PEGADO DIRECTO DE TEXTO/LRC ============
+
+const textareaLrc = document.getElementById("textareaLrc");
+const btnImportarPegado = document.getElementById("btnImportarPegado");
+
+if (btnImportarPegado && textareaLrc) {
+  btnImportarPegado.addEventListener("click", () => {
+    const artista = inputArtistaLrc.value.trim();
+    const cancion = inputCancionLrc.value.trim();
+    if (!artista || !cancion) {
+      mostrarMsgImportar("Escribe el artista y el nombre de la canción antes de importar.", "error");
+      return;
+    }
+    const contenido = textareaLrc.value;
+    if (!contenido || !contenido.trim()) {
+      mostrarMsgImportar("Pega el texto o el LRC de la letra primero.", "error");
+      return;
+    }
+    procesarLetraCruda(contenido, artista, cancion);
+  });
+}
+
+// Punto único de entrada para cualquier fuente de letra cruda (archivo .lrc,
+// .txt, o texto pegado en el textarea). Decide qué mensaje mostrar según el
+// modo detectado por el parser, y en modo "plano" (sin timestamps) no inventa
+// sincronización — solo guarda el texto tal cual, como se especificó.
+function procesarLetraCruda(contenidoCrudo, artista, cancion) {
+  const resultado = parsearLRC(contenidoCrudo);
+
+  if (resultado.lineas.length === 0) {
+    mostrarMsgImportar("No se encontró texto de letra válido.", "error");
+    return;
+  }
+
+  let lineasFinales = resultado.lineas;
+
+  // Modo "plano": sin timestamps. Si el usuario ya fijó una duración manual
+  // para esta importación, se reparte proporcionalmente; si no, se guarda sin
+  // sincronización (el viewer la muestra como texto simple).
+  if (resultado.modo === "plano") {
+    const duracionManualSeg = parseInt(inputDuracionManual?.value, 10);
+    if (duracionManualSeg > 0) {
+      lineasFinales = aplicarDuracionManual(resultado.lineas, duracionManualSeg * 1000);
+    }
+  }
+
+  const ok = guardarLetra(artista, cancion, { modo: resultado.modo, lineas: lineasFinales });
+  if (!ok) {
+    mostrarMsgImportar("No se pudo guardar la letra (almacenamiento local lleno o bloqueado).", "error");
+    return;
+  }
+
+  const etiquetaModo = {
+    palabra: "sincronizada por palabra",
+    linea: "sincronizada por línea",
+    plano: lineasFinales[0]?.ms != null ? "con duración estimada" : "sin sincronización (texto simple)"
+  }[resultado.modo] || "";
+
+  if (textareaLrc) textareaLrc.value = "";
+  mostrarMsgImportar(
+    `Letra importada (${etiquetaModo}): ${lineasFinales.length} líneas guardadas para "${cancion}" — ${artista}.`,
+    "ok"
+  );
+}
 
 function mostrarMsgImportar(texto, tipo) {
   msgImportarLrc.textContent = texto;
@@ -306,3 +362,4 @@ document.getElementById("btnRestablecer").addEventListener("click", () => {
   renderTodo();
   mostrarGuardado();
 });
+w
