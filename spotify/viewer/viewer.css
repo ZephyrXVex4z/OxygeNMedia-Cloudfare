@@ -315,6 +315,42 @@ canvas.np-espectro-canvas { width: 100%; height: 100%; display: block; }
 }
 .np-letra-linea.pasada { opacity: 0.28; }
 
+/* Resaltado por palabra/fragmento (modo LRC "enhanced"). Cada palabra trae
+   sus propias variables --fx-* calculadas por efectos-texto.js según la
+   velocidad con la que aparece — nunca valores fijos en el CSS. */
+.np-letra-palabra {
+  display: inline-block;
+  opacity: 0.4;
+  color: var(--v-text-dim);
+  transition:
+    opacity var(--fx-duracion, 220ms) ease,
+    color var(--fx-duracion, 220ms) ease,
+    transform var(--fx-duracion, 220ms) cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter var(--fx-duracion, 220ms) ease,
+    letter-spacing var(--fx-duracion, 220ms) ease;
+  will-change: transform, opacity;
+}
+.np-letra-palabra.pasada { opacity: 0.55; color: var(--v-text-dim); }
+.np-letra-palabra.activa {
+  opacity: 1;
+  color: var(--v-text);
+  letter-spacing: var(--fx-tracking, 0);
+  transform:
+    translateY(calc(var(--fx-desplazamiento, 0) * -1px))
+    scale(var(--fx-escala, 1))
+    translateX(0);
+  filter:
+    drop-shadow(0 0 calc(var(--fx-glow, 0.2) * 10px) var(--v-accent))
+    blur(var(--fx-blur, 0px));
+  animation: np-palabra-shake 260ms ease-in-out;
+}
+@keyframes np-palabra-shake {
+  0%, 100% { transform: translateX(0) translateY(calc(var(--fx-desplazamiento, 0) * -1px)) scale(var(--fx-escala, 1)); }
+  25% { transform: translateX(calc(var(--fx-shake, 0) * -1px)) translateY(calc(var(--fx-desplazamiento, 0) * -1px)) scale(var(--fx-escala, 1)); }
+  75% { transform: translateX(var(--fx-shake, 0)) translateY(calc(var(--fx-desplazamiento, 0) * -1px)) scale(var(--fx-escala, 1)); }
+}
+[data-fx-velocidad="lento"].np-letra-palabra.activa { animation: none; }
+
 .np-letra-vacia {
   flex: 1;
   display: flex;
@@ -362,6 +398,8 @@ canvas.np-espectro-canvas { width: 100%; height: 100%; display: block; }
   .np-dot.reproduciendo { animation: none; }
   .sk-block { animation: none; }
   .np-portada, .np-cancion, .np-artista, .np-letra-linea { transition: none; }
+  .np-letra-palabra { transition: none; }
+  .np-letra-palabra.activa { animation: none; transform: none; filter: none; }
 }
 
 /* ============ EFECTOS AMBIENTALES (partículas, modo medio/potente) ============ */
