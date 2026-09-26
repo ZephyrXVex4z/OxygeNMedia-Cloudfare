@@ -7,7 +7,8 @@ import { obtenerCancionActual, iniciarConexionSpotify } from "../../spotify.js";
 import { leerAjustesViewer } from "./ajustes-shared.js";
 import { aplicarTemaViewer, obtenerTemaViewerGuardado } from "./viewer-temas.js";
 import { crearEspectro } from "./espectro.js";
-import { obtenerLetra, indiceLineaActiva } from "./lrc-parser.js";
+import { obtenerLetra, indiceLineaActiva, indicePalabraActiva } from "./lrc-parser.js";
+import { aplicarEfectoAFragmento } from "./efectos-texto.js";
 
 // ============ CONFIGURACIÓN DE POLLING ============
 
@@ -31,8 +32,9 @@ let reproduciendoActual = false;
 let ultimaMarcaTiempo = 0;
 let timerLetra = null;
 
-let letraActualParseada = null; // [{ms, texto}] o null
+let letraActualParseada = null; // { modo: "palabra"|"linea"|"plano", lineas: [...] } o null
 let indiceLineaAnterior = -1;
+let indicePalabraAnterior = -1;
 let instanciaEspectro = null;
 
 const elStage = document.getElementById("viewerStage");
@@ -353,8 +355,9 @@ function renderPanelLetra(datos) {
   if (!contenedor) return; // diseño actual no es "letra"
 
   const ajustes = leerAjustesViewer();
+  const lineas = letraActualParseada && letraActualParseada.lineas;
 
-  if (!ajustes.letraActiva || !letraActualParseada || letraActualParseada.length === 0) {
+  if (!ajustes.letraActiva || !lineas || lineas.length === 0) {
     contenedor.innerHTML = `
       <div class="np-letra-vacia">
         <div class="icono">📝</div>
@@ -365,16 +368,26 @@ function renderPanelLetra(datos) {
     return;
   }
 
+  const modo = letraActualParseada.modo;
   const scrollDiv = document.createElement("div");
   scrollDiv.className = "np-letra-scroll";
   scrollDiv.id = "npLetraScroll";
-  scrollDiv.innerHTML = letraActualParseada.map((linea, i) =>
-    `<p class="np-letra-linea" data-idx="${i}">${escapeHtml(linea.texto)}</p>`
-  ).join("");
+  scrollDiv.dataset.modoLetra = modo;
+
+  scrollDiv.innerHTML = lineas.map((linea, i) => {
+    if (modo === "palabra" && Array.isArray(linea.palabras)) {
+      const html = linea.palabras.map((p, j) =>
+        `<span class="np-letra-palabra" data-idx="${j}">${escapeHtml(p.texto)}</span>`
+      ).join(" ");
+      return `<p class="np-letra-linea" data-idx="${i}">${html}</p>`;
+    }
+    return `<p class="np-letra-linea" data-idx="${i}">${escapeHtml(linea.texto)}</p>`;
+  }).join("");
 
   contenedor.innerHTML = "";
   contenedor.appendChild(scrollDiv);
   indiceLineaAnterior = -1;
+  indicePalabraAnterior = -1;
 }
 
 function escapeHtml(str) {
@@ -385,15 +398,25 @@ function escapeHtml(str) {
 
 // Seguimiento de letra: NO hace polling a Spotify. Usa el último progresoMs
 // conocido + tiempo transcurrido localmente para estimar dónde va la canción, y
-// solo actualiza qué línea se resalta. Se detiene si no hay letra visible, si
-// está pausado, o si la pestaña está oculta.
+// solo actualiza qué línea (y, si aplica, qué palabra) se resalta. Se detiene
+// si no hay letra visible, si está pausado, o si la pestaña está oculta.
+//
+// Cuando el modo es "palabra" se necesita más resolución temporal para que el
+// resaltado por fragmento se sienta preciso — se usa un intervalo más corto
+// solo en ese caso, ya que es puramente local (no genera tráfico de red).
+const INTERVALO_SEGUIMIENTO_PALABRA_MS = 90;
+
 function iniciarSeguimientoLetraSiAplica() {
   const ajustes = leerAjustesViewer();
   if (ajustes.diseno !== "letra" || !ajustes.letraActiva) return;
-  if (!letraActualParseada || letraActualParseada.length === 0) return;
+  const lineas = letraActualParseada && letraActualParseada.lineas;
+  if (!lineas || lineas.length === 0) return;
+  if (lineas[0].ms == null) return; // modo "plano" sin duración manual: nada que seguir
   if (timerLetra) return; // ya corriendo
 
   const prefiereReducido = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const modo = letraActualParseada.modo;
+  const intervalo = modo === "palabra" ? INTERVALO_SEGUIMIENTO_PALABRA_MS : INTERVALO_SEGUIMIENTO_LETRA_MS;
 
   const paso = () => {
     if (destruido || document.visibilityState === "hidden" || !reproduciendoActual) {
@@ -402,13 +425,19 @@ function iniciarSeguimientoLetraSiAplica() {
     }
     const transcurrido = performance.now() - ultimaMarcaTiempo;
     const progresoActualEstimado = progresoEstimadoMs + transcurrido;
-    const idx = indiceLineaActiva(letraActualParseada, progresoActualEstimado);
+    const idxLinea = indiceLineaActiva(lineas, progresoActualEstimado);
 
-    if (idx !== indiceLineaAnterior) {
-      actualizarLineaActivaEnDom(idx, !prefiereReducido);
-      indiceLineaAnterior = idx;
+    let idxPalabra = -1;
+    if (modo === "palabra" && idxLinea >= 0) {
+      idxPalabra = indicePalabraActiva(lineas[idxLinea], progresoActualEstimado);
     }
-    timerLetra = setTimeout(paso, INTERVALO_SEGUIMIENTO_LETRA_MS);
+
+    if (idxLinea !== indiceLineaAnterior || idxPalabra !== indicePalabraAnterior) {
+      actualizarLineaActivaEnDom(idxLinea, idxPalabra, lineas, !prefiereReducido);
+      indiceLineaAnterior = idxLinea;
+      indicePalabraAnterior = idxPalabra;
+    }
+    timerLetra = setTimeout(paso, intervalo);
   };
   paso();
 }
@@ -417,18 +446,30 @@ function detenerSeguimientoLetra() {
   if (timerLetra) { clearTimeout(timerLetra); timerLetra = null; }
 }
 
-function actualizarLineaActivaEnDom(idxActiva, conScroll) {
+function actualizarLineaActivaEnDom(idxLineaActiva, idxPalabraActiva, lineasData, conScroll) {
   const scrollDiv = document.getElementById("npLetraScroll");
   if (!scrollDiv) return;
 
-  const lineas = scrollDiv.querySelectorAll(".np-letra-linea");
-  lineas.forEach((el, i) => {
-    el.classList.toggle("activa", i === idxActiva);
-    el.classList.toggle("pasada", i < idxActiva);
+  const elsLinea = scrollDiv.querySelectorAll(".np-letra-linea");
+  elsLinea.forEach((el, i) => {
+    const esActiva = i === idxLineaActiva;
+    el.classList.toggle("activa", esActiva);
+    el.classList.toggle("pasada", i < idxLineaActiva);
+
+    if (esActiva && idxPalabraActiva >= 0 && lineasData[i] && Array.isArray(lineasData[i].palabras)) {
+      const elsPalabra = el.querySelectorAll(".np-letra-palabra");
+      elsPalabra.forEach((elP, j) => {
+        elP.classList.toggle("activa", j === idxPalabraActiva);
+        elP.classList.toggle("pasada", j < idxPalabraActiva);
+        if (j === idxPalabraActiva) {
+          aplicarEfectoAFragmento(elP, lineasData[i].palabras[j]);
+        }
+      });
+    }
   });
 
-  if (idxActiva >= 0 && conScroll) {
-    const elActiva = lineas[idxActiva];
+  if (idxLineaActiva >= 0 && conScroll) {
+    const elActiva = elsLinea[idxLineaActiva];
     if (elActiva) {
       const offset = elActiva.offsetTop - scrollDiv.clientHeight / 2 + elActiva.clientHeight / 2;
       scrollDiv.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
