@@ -416,4 +416,240 @@ function infoRows(it) {
     ["Contenido", `<a data-link href="${href(d.id)}">${esc(d.name)}</a>`],
     ["Tipo", esc(TYPE_LABEL[it.type] || it.type)]
   ];
-  if (it.type ===
+  if (it.type === "shout") {
+    rows.push(["Tiempo de reutilización", it.cooldown ? esc(it.cooldown) : "Varía según la palabra desbloqueada"]);
+    rows.push(["Alma de dragón", esc(it.dragonSoulCost || "—")]);
+  }
+  if (it.location) rows.push(["Ubicación", esc(it.location)]);
+  if (it.requirements) rows.push(["Requisitos", esc(it.requirements)]);
+  return rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+}
+
+function linkChips(list) {
+  return `<ul class="chips">${list.map((r) => `<li><a class="chip-link" data-link href="${itemUrl(r)}"><span aria-hidden="true">${catById(r.category)?.icon || ""}</span> ${esc(r.name)}</a></li>`).join("")}</ul>`;
+}
+
+async function viewItem(route, token) {
+  const art = await getArticle(route.id, { remote: false });
+  if (!art || art.item.category !== route.category) return viewNotFound(token);
+  const it = art.item;
+  const c = catById(it.category);
+  const { outgoing, incoming } = await getRelatedItems(it.id);
+  if (token !== renderToken) return;
+
+  const places = outgoing.filter((r) => r.category === "places" || r.category === "houses");
+  const quests = outgoing.filter((r) => r.category === "quests");
+  const questNames = (it.quests || []).filter((q) => !getItemById(q));
+  const others = outgoing.filter((r) => !places.includes(r) && !quests.includes(r));
+  const searchUrl = it.sources[0]?.url || remoteSearchUrl(it.name);
+
+  setMeta({
+    title: it.name,
+    description: `${it.name} (${c.name}, ${dlcById(it.dlc).name}): ${it.effect || it.description}`,
+    path: itemUrl(it),
+    image: it.image ? new URL(it.image, location.origin).href : undefined,
+    type: "article",
+    jsonld: {
+      "@context": "https://schema.org", "@type": "Article", headline: it.name, description: it.description,
+      about: GAME.title, url: location.origin + itemUrl(it), inLanguage: "es", isPartOf: { "@type": "WebSite", name: "OxygeNMedia", url: GAME.home }
+    }
+  });
+
+  mount(`
+    ${breadcrumb([{ label: "Skyrim Wiki", href: href("") }, { label: c.name, href: href(c.id) }, { label: it.name }])}
+    <article class="article" itemscope itemtype="https://schema.org/Article">
+      <header class="art-head" style="--dlc:${dlcById(it.dlc).color}">
+        ${it.image ? `<img class="art-img" src="${esc(it.image)}" alt="${esc(it.name)}" loading="lazy" decoding="async">` : `<span class="art-ico" aria-hidden="true">${c.icon}</span>`}
+        <div>
+          <h1 tabindex="-1" itemprop="headline">${esc(it.name)}</h1>
+          <p class="art-tags">
+            <a class="badge plain" data-link href="${href(c.id)}">${c.icon} ${esc(c.name)}</a>
+            <a class="badge-link" data-link href="${href(it.dlc)}">${dlcBadge(it.dlc)}</a>
+          </p>
+        </div>
+      </header>
+
+      <div class="art-grid">
+        <div class="art-main">
+          <section class="parchment" aria-labelledby="h-desc">
+            <h2 id="h-desc" class="sr">Descripción</h2>
+            <p itemprop="description">${esc(it.description)}</p>
+          </section>
+
+          ${it.effect ? `<section aria-labelledby="h-eff"><h2 id="h-eff">Efecto</h2><p>${esc(it.effect)}</p></section>` : ""}
+          ${wordsSection(it)}
+
+          ${places.length ? `<section aria-labelledby="h-pl"><h2 id="h-pl">Lugares relacionados</h2>${linkChips(places)}</section>` : ""}
+          ${quests.length || questNames.length ? `<section aria-labelledby="h-q"><h2 id="h-q">Misiones relacionadas</h2>
+            ${quests.length ? linkChips(quests) : ""}${questNames.length ? `<p>${questNames.map(esc).join(", ")}</p>` : ""}</section>` : ""}
+          ${others.length || incoming.length ? `<section aria-labelledby="h-rel"><h2 id="h-rel">Relacionado con</h2>
+            ${others.length ? linkChips(others) : ""}
+            ${incoming.length ? `<p class="sub">Artículos que lo mencionan</p>${linkChips(incoming)}` : ""}</section>` : ""}
+
+          <div id="remote-slot" aria-live="polite">${it.uesp ? `<p class="muted">Cargando extracto de UESP…</p>` : ""}</div>
+
+          <section class="sources" aria-labelledby="h-src">
+            <h2 id="h-src">Fuentes</h2>
+            <ul>
+              ${it.sources.length
+                ? it.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a> (${esc(s.license)})</li>`).join("")
+                : `<li>Dato editorial de la base local de OxygeNMedia. <a href="${esc(searchUrl)}" target="_blank" rel="noopener">Verificar en UESP</a></li>`}
+            </ul>
+            <p class="muted">Los datos locales son un resumen propio. Comprueba siempre cifras y ubicaciones exactas en la fuente.</p>
+          </section>
+        </div>
+
+        <aside class="art-side" aria-label="Información">
+          <h2>Información</h2>
+          <dl class="info">${infoRows(it)}</dl>
+          <a class="btn ghost" data-link href="${href(c.id, `?dlc=${it.dlc}`)}">Más de ${esc(c.name.toLowerCase())} en ${esc(dlcById(it.dlc).name)}</a>
+        </aside>
+      </div>
+    </article>
+  `);
+
+  // Enriquecimiento remoto (no bloquea la página).
+  if (it.uesp) {
+    const { remote, remoteError } = await getArticle(it.id, { remote: true });
+    if (token !== renderToken) return;
+    const slot = $("#remote-slot");
+    if (!slot) return;
+    if (remote?.extract) {
+      slot.innerHTML = `
+        <section class="remote" aria-labelledby="h-uesp">
+          <h2 id="h-uesp">Según UESP</h2>
+          ${remote.image ? `<img class="remote-img" src="${esc(remote.image)}" alt="${esc(it.name)}" loading="lazy" decoding="async">` : ""}
+          <p>${esc(remote.extract)}</p>
+          <p class="muted">Extracto de <a href="${esc(remote.url)}" target="_blank" rel="noopener">${esc(remote.title)}</a> en ${esc(GAME.remote.name)}, bajo licencia <a href="${GAME.remote.licenseUrl}" target="_blank" rel="noopener">${esc(GAME.remote.license)}</a>. Contenido de terceros, no creado por OxygeNMedia.</p>
+        </section>`;
+    } else {
+      slot.innerHTML = remoteError
+        ? `<p class="muted">No se pudo cargar el extracto de UESP (${esc(remoteError)}). La información local sigue disponible.</p>`
+        : `<p class="muted"><a href="${esc(searchUrl)}" target="_blank" rel="noopener">Ver más en UESP</a></p>`;
+    }
+  }
+}
+
+// ============ Vista: búsqueda ============
+async function viewSearch(route, token, keep) {
+  const state = parseFilters(route.params);
+  const q = state.q;
+  setMeta({ title: q ? `Buscar: ${q}` : "Buscar", path: href("search"), description: q ? `Resultados para «${q}» en ${GAME.title}.` : undefined });
+
+  const header = `
+    ${breadcrumb([{ label: "Skyrim Wiki", href: href("") }, { label: "Búsqueda" }])}
+    <header class="page-head"><h1 tabindex="-1">${q ? `Resultados para «${esc(q)}»` : "Buscar en Skyrim Wiki"}</h1></header>`;
+
+  const onChange = (s) => navigate(href("search", serializeFilters(s)), { replace: true, scroll: false });
+
+  if (!q) {
+    const recent = getRecent();
+    mount(`${header}
+      <div class="layout">
+        <button type="button" class="btn ghost only-mobile" id="toggleFilters" aria-expanded="false" aria-controls="filters">Filtros</button>
+        <aside id="filters" class="side" aria-label="Filtros"></aside>
+        <section class="results">
+          ${emptyState({ title: "Escribe qué quieres encontrar", text: "Prueba con un personaje, un grito, un lugar o un objeto. Puedes filtrar por DLC antes de buscar." })}
+          ${recent.length ? `<p class="sub">Búsquedas recientes</p><ul class="chips">${recent.map((r) => `<li><a class="chip-link" data-link href="${href("search", serializeFilters({ ...state, q: r }))}">${esc(r)}</a></li>`).join("")}</ul>` : ""}
+        </section>
+      </div>`, { keepFocus: keep });
+    renderFilterPanel($("#filters"), state, onChange, { items: ITEMS, showSearch: false });
+    wireFilterToggle();
+    return;
+  }
+
+  const localOnly = await searchSkyrim(q, state, { remote: false });
+  if (token !== renderToken) return;
+  const local = localOnly.local;
+
+  mount(`${header}
+    <div class="layout">
+      <button type="button" class="btn ghost only-mobile" id="toggleFilters" aria-expanded="false" aria-controls="filters">Filtros${state.dlc.length || state.cat.length ? " (activos)" : ""}</button>
+      <aside id="filters" class="side" aria-label="Filtros"></aside>
+      <section class="results" aria-labelledby="count">
+        <p id="count" class="count" role="status" aria-live="polite">${plural(local.length, "resultado local", "resultados locales")}</p>
+        ${local.length ? resultsGrid(local) : emptyState({
+          title: "Sin resultados locales",
+          text: state.dlc.length || state.cat.length ? "Prueba a quitar filtros, o mira los resultados de UESP más abajo." : "Mira los resultados de UESP más abajo.",
+          actions: state.dlc.length || state.cat.length ? `<a class="btn" data-link href="${href("search", serializeFilters({ ...state, dlc: [], cat: [] }))}">Quitar filtros</a>` : ""
+        })}
+        <section id="remote-results" aria-labelledby="h-remote" aria-live="polite">
+          <h2 id="h-remote">Más resultados en UESP</h2>
+          <p class="muted loading">Buscando en UESP…</p>
+        </section>
+      </section>
+    </div>`, { keepFocus: keep });
+  renderFilterPanel($("#filters"), state, onChange, { items: ITEMS, showSearch: false });
+  wireFilterToggle();
+
+  const { remote, remoteError } = await searchSkyrim(q, state, { remote: true });
+  if (token !== renderToken) return;
+  const box = $("#remote-results");
+  if (!box) return;
+  const body = remoteError
+    ? `<p class="muted">No se pudo consultar UESP (${esc(remoteError)}). Los resultados locales siguen disponibles.</p>`
+    : remote.length
+      ? `<ul class="remote-list">${remote.map((r) => `<li><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a><p>${esc(r.snippet)}</p></li>`).join("")}</ul>
+         <p class="muted">Resultados de ${esc(GAME.remote.name)} (${esc(GAME.remote.license)}). Contenido de terceros.</p>`
+      : `<p class="muted">UESP no devolvió resultados adicionales para «${esc(q)}».</p>`;
+  box.innerHTML = `<h2 id="h-remote">Más resultados en UESP</h2>${body}`;
+}
+
+// ============ Vista: 404 interna ============
+function viewNotFound() {
+  setMeta({ title: "Página no encontrada", path: location.pathname });
+  mount(`
+    <div class="empty" role="status">
+      <h1 tabindex="-1" class="empty-t">No encontramos esta página de la wiki</h1>
+      <p>El enlace puede estar mal escrito o el artículo aún no existe en la base local.</p>
+      <div class="empty-a"><a class="btn" data-link href="${href("")}">Ir al inicio de Skyrim Wiki</a>
+      <a class="btn ghost" data-link href="${href("search")}">Buscar</a></div>
+    </div>`);
+}
+
+// ============ Enrutado ============
+async function render(route, opts = {}) {
+  const token = ++renderToken;
+  const path = location.pathname;
+  const samePage = path === lastPath;
+  lastPath = path;
+  if (!samePage) { scopeOff = false; filtersOpen = false; }
+
+  try {
+    if (route.name === "home") viewHome();
+    else if (route.name === "category") await viewCategory(route, token, samePage);
+    else if (route.name === "dlc") await viewDlc(route, token, samePage);
+    else if (route.name === "item") await viewItem(route, token);
+    else if (route.name === "search") await viewSearch(route, token, samePage);
+    else viewNotFound();
+  } catch (err) {
+    console.error(err);
+    if (token === renderToken) {
+      mount(emptyState({
+        title: "Algo salió mal al cargar esta página",
+        text: "Recarga la página o vuelve al inicio.",
+        actions: `<a class="btn" data-link href="${href("")}">Volver al inicio</a>`
+      }));
+    }
+  }
+  if (token !== renderToken) return;
+
+  updateScope();
+  if (!samePage) {
+    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+    else if (opts.scroll !== false) window.scrollTo({ top: 0 });
+    if (!opts.initial) $("h1", main)?.focus({ preventScroll: true });
+  }
+}
+
+// Imágenes rotas → placeholder (una sola vez por imagen).
+document.addEventListener("error", (e) => {
+  const img = e.target;
+  if (img.tagName !== "IMG" || img.dataset.fb) return;
+  img.dataset.fb = "1";
+  img.src = `${GAME.base}/placeholder.svg`;
+}, true);
+
+mountSearch();
+initTheme();
+initRouter(render);
