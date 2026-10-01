@@ -100,7 +100,7 @@ h1:focus, #app:focus { outline: none; }
   border: 1px solid var(--border); position: relative; overflow: hidden;
   background:
     linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--bg) 70%, transparent)),
-    url("../assets/images/mountains.svg") center bottom / cover no-repeat,
+    url("mountains.svg") center bottom / cover no-repeat,
     var(--stone);
 }
 .hero-text { position: relative; }
