@@ -238,4 +238,210 @@ const RAW_ITEMS = [
   { id: "fireball", name: "Fireball", type: "spell", category: "spells", dlc: "skyrim",
     description: "Proyectil de fuego que explota en área al impactar.", tags: ["destrucción", "fuego"] },
   { id: "conjure-familiar", name: "Conjure Familiar", type: "spell", category: "spells", dlc: "skyrim",
-    description: "Invoca a u
+    description: "Invoca a un espíritu lobo que combate a tu lado durante un tiempo.", tags: ["conjuración"] },
+
+  // ---------- DRAGONES ----------
+  { id: "alduin", name: "Alduin", type: "dragon", category: "dragons", dlc: "skyrim",
+    description: "El Devorador de Mundos, dragón primordial y antagonista principal del juego base.", aliases: ["devorador de mundos"], related: ["dragonrend", "paarthurnax", "sovngarde"], uesp: "Alduin" },
+  { id: "paarthurnax", name: "Paarthurnax", type: "dragon", category: "dragons", dlc: "skyrim",
+    description: "Dragón anciano que vive en la cima de la Garganta del Mundo y enseña a los Greybeards.", location: "Throat of the World", related: ["alduin", "dragonrend"], uesp: "Paarthurnax" },
+  { id: "odahviing", name: "Odahviing", type: "dragon", category: "dragons", dlc: "skyrim",
+    description: "Dragón que puede unirse a tu causa tras la batalla contra Alduin y acudir con Call Dragon.", related: ["call-dragon", "alduin"], uesp: "Odahviing" },
+  { id: "durnehviir", name: "Durnehviir", type: "dragon", category: "dragons", dlc: "dawnguard",
+    description: "Dragón no muerto atrapado en el Soul Cairn que enseña un grito para invocarlo.", location: "Soul Cairn", related: ["summon-durnehviir", "soul-cairn", "soul-tear"], uesp: "Durnehviir" },
+  { id: "dragons-overview", name: "Dragones en Dragonborn", type: "mechanic", category: "dragons", dlc: "dragonborn",
+    description: "Con la tercera palabra de Bend Will puedes dominar y montar a un dragón. Además, el grito «Dragon Aspect» te da un aspecto propio de dragón.",
+    related: ["bend-will", "dragon-aspect", "dragonborn-dlc"], tags: ["montar dragones"] },
+
+  // ---------- CRIATURAS ----------
+  { id: "frost-troll", name: "Frost Troll", type: "creature", category: "creatures", dlc: "skyrim",
+    description: "Troll de hielo que habita zonas frías; se regenera y es vulnerable al fuego.", tags: ["troll"] },
+  { id: "draugr", name: "Draugr", type: "creature", category: "creatures", dlc: "skyrim",
+    description: "Antiguos nórdicos no muertos que custodian tumbas y ruinas.", tags: ["no muerto"] },
+  { id: "gargoyle", name: "Gargoyle", type: "creature", category: "creatures", dlc: "dawnguard",
+    description: "Criatura de piedra que sirve al clan Volkihar.", related: ["castle-volkihar", "volkihar-clan"], tags: ["piedra"] },
+  { id: "chaurus-hunter", name: "Chaurus Hunter", type: "creature", category: "creatures", dlc: "dawnguard",
+    description: "Insecto gigante alado añadido con Dawnguard, más ágil que el chaurus común.", tags: ["insecto"] },
+  { id: "seeker", name: "Seeker", type: "creature", category: "creatures", dlc: "dragonborn",
+    description: "Criatura de Apocrypha que lanza hechizos y tentáculos al combatir.", related: ["apocrypha", "miraak"], tags: ["apocrypha"] },
+  { id: "lurker", name: "Lurker", type: "creature", category: "creatures", dlc: "dragonborn",
+    description: "Gran criatura de Apocrypha, con ataques poderosos cuerpo a cuerpo.", related: ["apocrypha"], tags: ["apocrypha"] },
+  { id: "ash-spawn", name: "Ash Spawn", type: "creature", category: "creatures", dlc: "dragonborn",
+    description: "Criatura de ceniza de las Tierras Cenizas de Solstheim.", related: ["solstheim"], tags: ["solstheim"] },
+  { id: "riekling", name: "Riekling", type: "creature", category: "creatures", dlc: "dragonborn",
+    description: "Pequeños humanoides de Solstheim que a veces montan jabalíes.", related: ["solstheim"], tags: ["solstheim"] },
+
+  // ---------- NPCs ----------
+  { id: "serana", name: "Serana", type: "npc", category: "companions", dlc: "dawnguard",
+    description: "Vampira pura sangre, hija de Lord Harkon, que se convierte en compañera del Sangre de Dragón.", location: "Dimhollow Crypt / Castle Volkihar",
+    related: ["harkon", "castle-volkihar", "soul-cairn", "volkihar-clan", "bloodline"], uesp: "Serana", quests: ["bloodline"], tags: ["volkihar", "vampira"] },
+  { id: "lydia", name: "Lydia", type: "npc", category: "companions", dlc: "skyrim",
+    description: "Housecarl de Whiterun que se ofrece como seguidora; habitual primera compañera de muchos jugadores.", location: "Dragonsreach, Whiterun", related: ["whiterun"], uesp: "Lydia" },
+  { id: "teldryn-sero", name: "Teldryn Sero", type: "npc", category: "companions", dlc: "dragonborn",
+    description: "Mago dunmer de Tel Mithryn que puede acompañarte como seguidor.", location: "Tel Mithryn, Solstheim", related: ["tel-mithryn", "solstheim"] },
+  { id: "isran", name: "Isran", type: "npc", category: "npcs", dlc: "dawnguard",
+    description: "Líder de la Dawnguard y veterano cazador de vampiros.", location: "Fort Dawnguard", related: ["dawnguard-faction", "dawnguard-dlc"], uesp: "Isran" },
+  { id: "harkon", name: "Lord Harkon", type: "npc", category: "npcs", dlc: "dawnguard",
+    description: "Señor vampiro, líder del clan Volkihar y padre de Serana.", location: "Castle Volkihar", related: ["serana", "castle-volkihar", "volkihar-clan"], aliases: ["harkon"], uesp: "Lord Harkon" },
+  { id: "miraak", name: "Miraak", type: "npc", category: "npcs", dlc: "dragonborn",
+    description: "El primer Sangre de Dragón. Se alió con Hermaeus Mora y busca dominar a los dragones.", location: "Apocrypha / Solstheim",
+    related: ["apocrypha", "bend-will", "solstheim", "black-books", "dragonborn-dlc", "miraaks-sword"], uesp: "Miraak" },
+  { id: "neloth", name: "Neloth", type: "npc", category: "npcs", dlc: "dragonborn",
+    description: "Mago telvanni de Tel Mithryn, figura clave en la trama de Dragonborn.", location: "Tel Mithryn, Solstheim", related: ["tel-mithryn", "solstheim"] },
+  { id: "frea", name: "Frea", type: "npc", category: "npcs", dlc: "dragonborn",
+    description: "Skaal que guía al protagonista en la primera parte de la expansión.", related: ["skaal", "skaal-village", "solstheim"] },
+  { id: "ulfric-stormcloak", name: "Ulfric Stormcloak", type: "npc", category: "npcs", dlc: "skyrim",
+    description: "Líder de los Capas de la Tormenta en la guerra civil de Skyrim.", related: ["whiterun"], uesp: "Ulfric Stormcloak" },
+  { id: "tullius", name: "General Tullius", type: "npc", category: "npcs", dlc: "skyrim",
+    description: "Comandante imperial de la Legión en Skyrim.", uesp: "General Tullius" },
+
+  // ---------- MASCOTAS ----------
+  { id: "barbas", name: "Barbas", type: "pet", category: "pets", dlc: "skyrim",
+    description: "Perro que acompaña a Clavicus Vile; se convierte en compañero durante la misión daédrica asociada.", tags: ["perro", "daedrico"], uesp: "Barbas" },
+
+  // ---------- MONTURAS ----------
+  { id: "shadowmere", name: "Shadowmere", type: "mount", category: "mounts", dlc: "skyrim",
+    description: "Caballo negro de la Hermandad Oscura, con gran resistencia y difícil de matar.", related: ["dark-brotherhood"], uesp: "Shadowmere", tags: ["caballo"] },
+  { id: "arvak", name: "Arvak", type: "mount", category: "mounts", dlc: "dawnguard",
+    description: "Caballo esquelético de fuego obtenido en Dawnguard; muy resistente y en llamas.", related: ["dawnguard-dlc"], uesp: "Arvak", tags: ["caballo", "esqueleto"] },
+  { id: "stable-horses", name: "Caballos de establo", type: "mount", category: "mounts", dlc: "skyrim",
+    description: "Caballos que se compran en los establos de las ciudades principales.", tags: ["caballo"] },
+
+  // ---------- LUGARES ----------
+  { id: "whiterun", name: "Whiterun", type: "place", category: "places", dlc: "skyrim",
+    description: "Ciudad central de Skyrim, sede del Jarl Balgruuf y de los Compañeros; hogar de Dragonsreach.", related: ["lydia"], uesp: "Whiterun" },
+  { id: "bleak-falls-barrow", name: "Bleak Falls Barrow", type: "place", category: "places", dlc: "skyrim",
+    description: "Tumba nórdica cerca de Riverwood con una pared de palabras de poder.", location: "Cerca de Riverwood", related: ["unrelenting-force", "dragon-rising"], uesp: "Bleak Falls Barrow" },
+  { id: "sovngarde", name: "Sovngarde", type: "place", category: "places", dlc: "skyrim",
+    description: "El Salón de los Valientes nórdico, donde Alduin devora almas.", related: ["alduin", "call-of-valor"], uesp: "Sovngarde" },
+  { id: "solstheim", name: "Solstheim", type: "place", category: "places", dlc: "dragonborn",
+    description: "Isla al noreste de Skyrim que sirve de escenario a Dragonborn. Incluye Raven Rock, Tel Mithryn y la aldea Skaal.", location: "Isla al noreste de Skyrim; se llega en barco",
+    related: ["dragonborn-dlc", "raven-rock", "tel-mithryn", "skaal-village", "apocrypha", "miraak"], uesp: "Solstheim" },
+  { id: "apocrypha", name: "Apocrypha", type: "place", category: "places", dlc: "dragonborn",
+    description: "Reino de Oblivion gobernado por Hermaeus Mora, lleno de libros y criaturas tentaculares.", location: "Plano de Oblivion (Hermaeus Mora)",
+    related: ["miraak", "black-books", "bend-will", "seeker", "lurker"], uesp: "Apocrypha" },
+  { id: "raven-rock", name: "Raven Rock", type: "place", category: "places", dlc: "dragonborn",
+    description: "Asentamiento dunmer de Solstheim, el más grande de la isla.", location: "Solstheim", related: ["solstheim", "bonemold-armor"], uesp: "Raven Rock" },
+  { id: "tel-mithryn", name: "Tel Mithryn", type: "place", category: "places", dlc: "dragonborn",
+    description: "Torre de hongo del mago Neloth, en Solstheim.", location: "Solstheim", related: ["neloth", "teldryn-sero", "solstheim"], uesp: "Tel Mithryn" },
+  { id: "skaal-village", name: "Skaal Village", type: "place", category: "places", dlc: "dragonborn",
+    description: "Aldea de los skaal, nórdicos de Solstheim que rinden culto al Todopadre.", location: "Solstheim", related: ["skaal", "frea", "solstheim"], uesp: "Skaal Village" },
+  { id: "castle-volkihar", name: "Castle Volkihar", type: "place", category: "places", dlc: "dawnguard",
+    description: "Fortaleza del clan vampírico Volkihar, en una isla del Mar de los Fantasmas.", location: "Mar de los Fantasmas",
+    related: ["volkihar-clan", "harkon", "serana", "gargoyle"], uesp: "Castle Volkihar", tags: ["volkihar"] },
+  { id: "soul-cairn", name: "Soul Cairn", type: "place", category: "places", dlc: "dawnguard",
+    description: "Reino de Oblivion donde reposan las almas atrapadas. Es el hogar de Durnehviir.", location: "Plano de Oblivion",
+    related: ["durnehviir", "summon-durnehviir", "soul-tear", "serana"], uesp: "Soul Cairn" },
+  { id: "lakeview-manor", name: "Lakeview Manor", type: "place", category: "houses", dlc: "hearthfire",
+    description: "Terreno junto a un lago en Falkreath Hold donde puedes construir tu casa con Hearthfire.", location: "Falkreath Hold", related: ["hearthfire-dlc"], uesp: "Lakeview Manor" },
+  { id: "heljarchen-hall", name: "Heljarchen Hall", type: "place", category: "houses", dlc: "hearthfire",
+    description: "Terreno nevado en The Pale donde puedes construir tu casa con Hearthfire.", location: "The Pale", related: ["hearthfire-dlc"], uesp: "Heljarchen Hall" },
+  { id: "windstad-manor", name: "Windstad Manor", type: "place", category: "houses", dlc: "hearthfire",
+    description: "Terreno pantanoso en Hjaalmarch donde puedes construir tu casa con Hearthfire.", location: "Hjaalmarch", related: ["hearthfire-dlc"], uesp: "Windstad Manor" },
+
+  // ---------- MISIONES ----------
+  { id: "dragon-rising", name: "Dragon Rising", type: "quest", category: "quests", dlc: "skyrim",
+    description: "Misión de la trama principal en la que aprendes tu primer grito y se revela tu destino.", related: ["bleak-falls-barrow", "unrelenting-force", "the-way-of-the-voice"], uesp: "Dragon Rising" },
+  { id: "the-way-of-the-voice", name: "The Way of the Voice", type: "quest", category: "quests", dlc: "skyrim",
+    description: "Misión en la que subes a High Hrothgar para aprender de los Greybeards.", related: ["paarthurnax", "dragon-rising"], uesp: "The Way of the Voice" },
+  { id: "bloodline", name: "Bloodline", type: "quest", category: "quests", dlc: "dawnguard",
+    description: "Misión de Dawnguard centrada en Serana y su origen vampírico.", related: ["serana", "harkon", "castle-volkihar"] },
+  { id: "the-path-of-knowledge", name: "The Path of Knowledge", type: "quest", category: "quests", dlc: "dragonborn",
+    description: "Misión de Dragonborn ligada a los Libros Negros y a las palabras de Bend Will.", related: ["black-books", "bend-will", "apocrypha"] },
+  { id: "at-the-summit-of-apocrypha", name: "At the Summit of Apocrypha", type: "quest", category: "quests", dlc: "dragonborn",
+    description: "Misión final de la expansión Dragonborn en Apocrypha.", related: ["apocrypha", "miraak", "dragon-aspect"] },
+
+  // ---------- FACCIONES ----------
+  { id: "dawnguard-faction", name: "La Dawnguard", type: "faction", category: "factions", dlc: "dawnguard",
+    description: "Orden de cazadores de vampiros con base en Fort Dawnguard, liderada por Isran.", related: ["isran", "dawnguard-armor", "crossbows"], uesp: "Dawnguard (faction)" },
+  { id: "volkihar-clan", name: "Clan Volkihar", type: "faction", category: "factions", dlc: "dawnguard",
+    description: "Clan vampírico liderado por Lord Harkon desde Castle Volkihar.", related: ["harkon", "serana", "castle-volkihar", "vampire-armor"], tags: ["volkihar"] },
+  { id: "skaal", name: "Los Skaal", type: "faction", category: "factions", dlc: "dragonborn",
+    description: "Comunidad nórdica de Solstheim que vive de forma tradicional.", related: ["skaal-village", "frea", "solstheim"] },
+  { id: "dark-brotherhood", name: "La Hermandad Oscura", type: "faction", category: "factions", dlc: "skyrim",
+    description: "Gremio de asesinos al servicio de la Madre Noche.", related: ["shadowmere"] },
+  { id: "companions-faction", name: "Los Compañeros", type: "faction", category: "factions", dlc: "skyrim",
+    description: "Gremio de guerreros de Whiterun, vinculado a la licantropía.", related: ["beast-form", "whiterun"] },
+
+  // ---------- ARTEFACTOS ----------
+  { id: "mehrunes-razor", name: "Mehrunes' Razor", type: "artifact", category: "artifacts", dlc: "skyrim",
+    description: "Daga daédrica de Mehrunes Dagon que puede matar instantáneamente a veces. Se obtiene en una misión daédrica.", aliases: ["mehrunes dagon", "razor"], tags: ["daedrico", "daga"], uesp: "Mehrunes' Razor" },
+  { id: "dawnbreaker", name: "Dawnbreaker", type: "artifact", category: "artifacts", dlc: "skyrim",
+    description: "Espada daédrica de Meridia que daña a los no muertos y puede incinerarlos.", aliases: ["meridia"], tags: ["daedrico", "espada"], uesp: "Dawnbreaker" },
+  { id: "auriels-bow", name: "Auriel's Bow", type: "artifact", category: "artifacts", dlc: "dawnguard",
+    description: "Arco élfico legendario ligado a la trama de Dawnguard y eficaz contra vampiros.", related: ["dawnguard-dlc", "isran"], tags: ["arco"], uesp: "Auriel's Bow" },
+  { id: "bloodskal-blade", name: "Bloodskal Blade", type: "artifact", category: "artifacts", dlc: "dragonborn",
+    description: "Espada nórdica legendaria de Solstheim, capaz de lanzar un ataque de poder.", related: ["solstheim"], tags: ["espada"] },
+  { id: "miraaks-sword", name: "Miraak's Sword", type: "artifact", category: "artifacts", dlc: "dragonborn",
+    description: "Espada del primer Sangre de Dragón, obtenida durante la trama de Dragonborn.", related: ["miraak", "apocrypha"], tags: ["espada"] },
+
+  // ---------- HABILIDADES Y VENTAJAS ----------
+  { id: "smithing", name: "Herrería", type: "skill", category: "skills", dlc: "skyrim",
+    description: "Habilidad de fabricar y mejorar armas y armaduras.", related: ["dragon-armor"] },
+  { id: "destruction", name: "Destrucción", type: "skill", category: "skills", dlc: "skyrim",
+    description: "Escuela de magia ofensiva: fuego, hielo y electricidad.", related: ["flames", "fireball"] },
+  { id: "dragon-armor", name: "Dragon Armor", type: "perk", category: "perks", dlc: "skyrim",
+    description: "Ventaja de Herrería que permite fabricar y mejorar equipo con huesos y escamas de dragón; clave para el equipo Dragonbone de Dawnguard.",
+    related: ["smithing", "dragonbone-weapons", "dragonbone-armor"] },
+
+  // ---------- VAMPIRISMO / LICANTROPÍA ----------
+  { id: "vampire-lord", name: "Señor Vampiro", type: "mechanic", category: "vampirism", dlc: "dawnguard",
+    description: "Forma de murciélago-demonio que desbloquea un árbol de ventajas propio. Se obtiene al avanzar en Dawnguard y ser vampiro.",
+    related: ["serana", "castle-volkihar", "dawnguard-dlc"], aliases: ["vampire lord"], tags: ["vampiro"] },
+  { id: "vampirism-base", name: "Vampirismo", type: "mechanic", category: "vampirism", dlc: "skyrim",
+    description: "Enfermedad que te convierte en vampiro con etapas progresivas y habilidades propias.", tags: ["vampiro"] },
+  { id: "beast-form", name: "Forma de Bestia", type: "mechanic", category: "lycanthropy", dlc: "skyrim",
+    description: "Forma de hombre lobo obtenida al unirte a los Compañeros y aceptar la licantropía.", related: ["companions-faction"], tags: ["hombre lobo"] },
+
+  // ---------- LIBROS ----------
+  { id: "black-books", name: "Libros Negros", type: "book", category: "books", dlc: "dragonborn",
+    description: "Libros de Hermaeus Mora que te transportan a Apocrypha y desbloquean las palabras de Bend Will, junto con otras habilidades.",
+    related: ["apocrypha", "miraak", "bend-will", "the-path-of-knowledge"], aliases: ["black books", "libros negros"] },
+  { id: "oghma-infinium", name: "Oghma Infinium", type: "book", category: "books", dlc: "skyrim",
+    description: "Tomo daédrico de Hermaeus Mora que permite elegir una rama de conocimiento.", tags: ["daedrico"] },
+
+  // ---------- LLAVES / ECONOMÍA / OBJETOS / OTROS ----------
+  { id: "skeleton-key", name: "Skeleton Key", type: "key", category: "keys", dlc: "skyrim",
+    description: "Llave maestra de Nocturnal que abre cualquier cerradura sin romperse.", tags: ["ladrón", "daedrico"], uesp: "Skeleton Key" },
+  { id: "gold", name: "Oro (Septim)", type: "currency", category: "economy", dlc: "skyrim",
+    description: "La moneda de Skyrim. Se usa en comercio, servicios, compra de casas y desbloqueo de entrenamiento." },
+  { id: "creation-club-economy", name: "Creation Club", type: "mechanic", category: "economy", dlc: "anniversary",
+    description: "Tienda de contenido oficial del juego en la que se compran creaciones con créditos.", tags: ["anniversary"] },
+  { id: "soul-gems", name: "Gemas de alma", type: "item", category: "items", dlc: "skyrim",
+    description: "Gemas que almacenan almas para encantar equipo y recargar objetos.", tags: ["encantamiento"] },
+  { id: "dragon-soul", name: "Alma de dragón", type: "item", category: "items", dlc: "skyrim",
+    description: "Esencia que absorbes al matar dragones. Se gasta para desbloquear palabras de poder ya aprendidas en una pared.",
+    aliases: ["dragon soul", "almas de dragon"], related: ["unrelenting-force", "dragon-aspect"] },
+  { id: "survival-mode", name: "Modo Supervivencia", type: "mechanic", category: "misc", dlc: "anniversary",
+    description: "Modo de juego con hambre, frío y fatiga que añade más dificultad." },
+  { id: "fishing", name: "Pesca", type: "mechanic", category: "misc", dlc: "anniversary",
+    description: "Actividad que permite pescar y usar lo capturado en cocina y alquimia." },
+  { id: "saints-and-seducers", name: "Saints & Seducers", type: "mechanic", category: "misc", dlc: "anniversary",
+    description: "Contenido de Creation Club con una nueva historia y región." },
+  { id: "hearthfire-adoption", name: "Adopción de niños", type: "mechanic", category: "misc", dlc: "hearthfire",
+    description: "Con Hearthfire puedes adoptar niños y vivir con ellos en tu casa construida.", related: ["hearthfire-dlc", "lakeview-manor"], tags: ["hearthfire", "familia"] },
+  { id: "hearthfire-dlc", name: "Hearthfire: construcción de casas", type: "mechanic", category: "misc", dlc: "hearthfire",
+    description: "Sistema para comprar terrenos y construir casas por módulos, con mayordomos, cultivo y animales.",
+    related: ["lakeview-manor", "heljarchen-hall", "windstad-manor", "hearthfire-adoption"] },
+  { id: "dawnguard-dlc", name: "Dawnguard: resumen del DLC", type: "mechanic", category: "misc", dlc: "dawnguard",
+    description: "Historia de la guerra entre la Dawnguard y el clan Volkihar, con el Soul Cairn y la Forma de Señor Vampiro.",
+    related: ["dawnguard-faction", "volkihar-clan", "soul-cairn", "serana"] },
+  { id: "dragonborn-dlc", name: "Dragonborn: resumen del DLC", type: "mechanic", category: "misc", dlc: "dragonborn",
+    description: "Historia de Solstheim, Miraak y Apocrypha, con Libros Negros y equipo de Stalhrim.",
+    related: ["solstheim", "miraak", "apocrypha", "black-books"] }
+];
+
+// Post-proceso: añade fuentes (UESP) y normaliza listas ausentes.
+const uespUrl = (t) => GAME.remote.pageBase + GAME.remote.namespace + encodeURIComponent(t.replace(/ /g, "_")).replace(/%27/g, "'").replace(/%3A/g, ":");
+
+export const ITEMS = RAW_ITEMS.map((it) => ({
+  aliases: [], tags: [], related: [], quests: [],
+  ...it,
+  sources: it.uesp ? [{ name: GAME.remote.name, url: uespUrl(it.uesp), license: GAME.remote.license }] : []
+}));
+
+// ============ Utilidades de consulta ============
+const BY_ID = new Map(ITEMS.map((i) => [i.id, i]));
+export const getItemById = (id) => BY_ID.get(id) || null;
+export const getDlc = (id) => DLCS.find((d) => d.id === id) || null;
+export const getCategory = (id) => CATEGORIES.find((c) => c.id === id) || null;
