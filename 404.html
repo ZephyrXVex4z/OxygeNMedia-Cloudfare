@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <script>
+(function () {
+  var base = "/Wiki/Skyrim";
+  var path = location.pathname;
+  if (path.indexOf(base + "/") !== 0 || path === base + "/") return;
+  var rest = path.slice(base.length); // "/shouts/dragon-aspect"
+  location.replace(base + "/?p=" + encodeURIComponent(rest) + (location.search ? "&" + location.search.slice(1) : "") + location.hash);
+})();
+  </script>
+  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Página no encontrada — OxygeNMedia</title>
