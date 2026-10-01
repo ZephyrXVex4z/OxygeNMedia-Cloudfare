@@ -1,0 +1,31 @@
+/* responsive.css — diseño móvil primero; aquí solo se amplía hacia arriba. */
+
+@media (max-width: 480px) {
+  .back { font-size: .78rem; padding: .4rem .55rem; }
+  .brand { font-size: .95rem; }
+  .sb-go { padding: .55rem .8rem; }
+  .remote-img { float: none; display: block; margin: 0 0 .7rem; width: 100%; max-width: 240px; }
+  .dlc-hero { flex-direction: column; }
+}
+
+@media (min-width: 720px) {
+  .wrap { padding: 1.5rem 1.5rem 4rem; }
+  .search-host { padding: 1.2rem 1.5rem 0; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .hero { grid-template-columns: 1.4fr 1fr; padding: 2.2rem; }
+  .words { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 980px) {
+  .layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .only-mobile { display: none; }
+  .side { display: block; margin: 0; position: sticky; top: 4.6rem; max-height: calc(100vh - 6rem); overflow-y: auto; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .art-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+  .art-side { position: sticky; top: 4.6rem; }
+}
+
+@media (min-width: 1200px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+  .layout .grid { grid-template-columns: repeat(2, 1fr); }
+}
