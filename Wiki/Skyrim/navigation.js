@@ -24,10 +24,13 @@ export function href(path = "", query = "") {
   return clean ? `${BASE}/${clean}${query}` : `${BASE}/${query}`;
 }
 
+const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
+const inBase = (pathname) => pathname === BASE || pathname.startsWith(BASE + "/");
+
 export function parseRoute(pathname, search = "") {
-  let rest = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
+  let rest = inBase(pathname) ? pathname.slice(BASE.length) : pathname;
   rest = rest.replace(/^\/+|\/+$/g, "");
-  const parts = rest ? rest.split("/").map(decodeURIComponent) : [];
+  const parts = rest ? rest.split("/").map(safeDecode) : [];
   const params = new URLSearchParams(search);
   const [a, b] = parts;
 
@@ -77,7 +80,7 @@ export function initRouter(handler) {
     const a = e.target.closest("a[data-link]");
     if (!a || a.target === "_blank") return;
     const u = new URL(a.href, location.origin);
-    if (u.origin !== location.origin || !u.pathname.startsWith(BASE)) return;
+    if (u.origin !== location.origin || !inBase(u.pathname)) return;
     e.preventDefault();
     navigate(u.pathname + u.search + u.hash);
   });
@@ -97,7 +100,7 @@ export function setMeta({ title, description, path = location.pathname, image, t
   const fullTitle = title ? `${title} — ${GAME.name} Wiki · OxygeNMedia` : `${GAME.name} Wiki — OxygeNMedia`;
   const desc = (description || `Explorador interactivo de ${GAME.title}: filtra por DLC y categoría, busca gritos, armas, NPCs, lugares y misiones.`).slice(0, 200);
   const url = location.origin + path;
-  const img = image || `${location.origin}${BASE}/assets/images/og-default.svg`;
+  const img = image || `${location.origin}${BASE}/og-default.svg`;
 
   document.title = fullTitle;
   setTag('meta[name="description"]', "meta", { name: "description", content: desc });
