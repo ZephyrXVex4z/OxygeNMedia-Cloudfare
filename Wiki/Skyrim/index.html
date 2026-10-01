@@ -45,3 +45,50 @@
 <script type="module" src="/Wiki/Skyrim/app.js"></script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="es" data-wiki="skyrim">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skyrim Wiki — OxygeNMedia</title>
+<meta name="description" content="Explorador interactivo de The Elder Scrolls V: Skyrim: filtra por DLC y categoría, busca gritos, armas, NPCs, lugares y misiones.">
+<meta property="og:site_name" content="OxygeNMedia">
+<meta property="og:locale" content="es_MX">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<link rel="icon" href="/Wiki/Skyrim/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+
+<!-- Tema de OxygeNMedia: síncrono, antes del primer render (evita el parpadeo) -->
+<script src="/tema-inline.js"></script>
+
+<link rel="stylesheet" href="/Wiki/Skyrim/style.css">
+<link rel="stylesheet" href="/Wiki/Skyrim/responsive.css">
+</head>
+<body>
+<a class="skip" href="#app">Saltar al contenido</a>
+
+<header class="top">
+  <a class="back" href="https://oxygenmedia.online/" aria-label="Volver a OxygeNMedia">← Volver a OxygeNMedia</a>
+  <a class="brand" data-link href="/Wiki/Skyrim/"><span aria-hidden="true">🐉</span> Skyrim Wiki</a>
+  <label class="sr" for="themeSelect">Tema visual</label>
+  <select id="themeSelect" class="theme" hidden></select>
+</header>
+
+<div id="searchHost" class="search-host"></div>
+
+<main id="app" class="wrap" tabindex="-1">
+  <p class="muted" role="status">Cargando Skyrim Wiki…</p>
+  <noscript><p>Esta wiki necesita JavaScript para funcionar.</p></noscript>
+</main>
+
+<footer class="foot">
+  <p>Skyrim Wiki es una sección de <a href="https://oxygenmedia.online/">OxygeNMedia</a>. The Elder Scrolls es marca de Bethesda Softworks; este sitio no está afiliado a Bethesda.</p>
+  <p>Los datos locales son un resumen propio. Los extractos y búsquedas ampliadas provienen de
+    <a href="https://en.uesp.net/" target="_blank" rel="noopener">UESP — Unofficial Elder Scrolls Pages</a>, bajo licencia
+    <a href="https://creativecommons.org/licenses/by-sa/2.5/" target="_blank" rel="noopener">CC BY-SA 2.5</a>.</p>
+</footer>
+
+<script type="module" src="/Wiki/Skyrim/app.js"></script>
+</body>
+</html>
