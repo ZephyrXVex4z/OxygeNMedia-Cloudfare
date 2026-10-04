@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análisis de un proceso tecnológico — OxygeNMedia</title>
+<meta name="description" content="Herramienta de OxygeNMedia para analizar un proceso tecnológico: medios técnicos, capacidades humanas ampliadas, organización del trabajo y pasos.">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#5b8def">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<!-- Aplica el tema guardado de OxygeNMedia antes de pintar (evita parpadeo) -->
+<script src="/tema-inline.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="skip" href="#contenido">Saltar al contenido</a>
+
+<div class="app">
+
+  <!-- ===== Barra fija: marca + progreso + navegación interna ===== -->
+  <div class="barra">
+    <div class="barra-top">
+      <a class="marca" href="/muro">🌐 OxygeNMedia</a>
+      <div class="barra-der">
+        <span class="pct-mini" id="pctMini" aria-hidden="true">0%</span>
+        <a class="btn secondary sm" href="/muro">Volver al sitio</a>
+      </div>
+    </div>
+    <nav class="nav" id="nav" aria-label="Secciones del proyecto">
+      <a href="#datos" data-nav="datos"><span class="chk" aria-hidden="true"></span>Datos</a>
+      <a href="#medios" data-nav="medios"><span class="chk" aria-hidden="true"></span>Medios técnicos</a>
+      <a href="#capacidad" data-nav="capacidad"><span class="chk" aria-hidden="true"></span>Capacidad corporal</a>
+      <a href="#necesidad" data-nav="necesidad"><span class="chk" aria-hidden="true"></span>Necesidad</a>
+      <a href="#organizacion" data-nav="organizacion"><span class="chk" aria-hidden="true"></span>Organización</a>
+      <a href="#proceso" data-nav="proceso"><span class="chk" aria-hidden="true"></span>Proceso</a>
+      <a href="#conclusion" data-nav="conclusion"><span class="chk" aria-hidden="true"></span>Conclusión</a>
+    </nav>
+    <div class="linea"><div id="lineaProgreso"></div></div>
+  </div>
+
+  <main id="contenido" class="contenedor">
+
+    <!-- ===== 1. Portada ===== -->
+    <header class="hero">
+      <p class="eyebrow">OxygeNMedia · Proyecto de análisis tecnológico</p>
+      <h1>Análisis de un proceso tecnológico</h1>
+      <p class="intro">
+        Este proyecto analiza cómo una tecnología satisface una necesidad: qué <strong>medios técnicos</strong>
+        utiliza (herramientas, máquinas e instrumentos), qué <strong>capacidades humanas amplía o sustituye</strong>
+        y cómo se <strong>organiza el trabajo</strong> de las personas que participan. Completa cada sección con la
+        información de tu entrevista; todo se guarda automáticamente en este dispositivo.
+      </p>
+
+      <div class="card progreso-card">
+        <div class="progreso-top">
+          <strong>Proyecto completado: <span id="pctTexto">0%</span></strong>
+          <span id="estadoGuardado" class="guardado" role="status" aria-live="polite"></span>
+        </div>
+        <div class="barra-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso del proyecto" id="progresoAria">
+          <div id="barraProgreso"></div>
+        </div>
+        <p class="faltan" id="faltanTexto"></p>
+        <div class="acciones">
+          <button type="button" class="btn secondary" data-accion="ejemplo" id="btnEjemplo">Cargar datos de ejemplo</button>
+          <button type="button" class="btn" data-accion="exportar">🖨️ Exportar proyecto</button>
+          <button type="button" class="btn danger-ghost" data-accion="limpiar">Limpiar proyecto</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== 2. Datos del proceso ===== -->
+    <section class="seccion" id="datos" data-seccion="datos" aria-labelledby="h-datos">
+      <div class="sec-head">
+        <span class="sec-num" aria-hidden="true">01</span>
+        <div>
+          <h2 id="h-datos">Datos del proceso</h2>
+          <p class="sec-desc">Identifica el proceso que entrevistaste y la necesidad que resuelve.</p>
+        </div>
+        <span class="estado" data-estado="datos"></span>
+      </div>
+      <div class="card form-grid">
+        <label class="campo">
+          <span>Nombre del proceso</span>
+          <input type="text" data-bind="datos.nombre" placeholder="Ej. Elaboración de pan, reparación de calzado…" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span>Nombre del artículo / proceso elegido</span>
+          <input type="text" data-bind="datos.articulo" placeholder="Ej. Pan de caja, zapato reparado…" autocomplete="off">
+        </label>
+        <label class="campo full">
+          <span>Necesidad que satisface</span>
+          <textarea rows="3" data-bind="datos.necesidad" placeholder="¿Qué necesidad humana resuelve este proceso? (alimentación, transporte, comunicación…)"></textarea>
+        </label>
+        <label class="campo full">
+          <span>Descripción breve</span>
+          <textarea rows="3" data-bind="datos.descripcion" placeholder="Resume en pocas líneas en qué consiste el proceso."></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- ===== 3. Medios técnicos ===== -->
+    <section class="seccion" id="medios" data-seccion="medios" aria-labelledby="h-medios">
+      <div class="sec-head">
+        <span class="sec-num" aria-hidden="true">02</span>
+        <div>
+          <h2 id="h-medios">Medios técnicos</h2>
+          <p class="sec-desc">Agrega cada herramienta, máquina e instrumento que se usa en el proceso.</p>
+        </div>
+        <span class="estado" data-estado="medios"></span>
+      </div>
+
+      <div class="cat" data-cat="herramienta">
+        <div class="cat-head">
+          <h3>🔧 Herramientas <span class="cuenta" id="cuenta-herramienta">0</span></h3>
+          <p>Objetos que se manejan con la mano para trabajar un material.</p>
+        </div>
+        <div class="lista" id="lista-herramienta"></div>
+        <button type="button" class="btn secondary add" data-accion="add-medio" data-tipo="herramienta">+ Agregar herramienta</button>
+      </div>
+
+      <div class="cat" data-cat="maquina">
+        <div class="cat-head">
+          <h3>⚙️ Máquinas <span class="cuenta" id="cuenta-maquina">0</span></h3>
+          <p>Dispositivos que transforman energía para realizar un trabajo.</p>
+        </div>
+        <div class="lista" id="lista-maquina"></div>
+        <button type="button" class="btn secondary add" data-accion="add-medio" data-tipo="maquina">+ Agregar máquina</button>
+      </div>
+
+      <div class="cat" data-cat="instrumento">
+        <div class="cat-head">
+          <h3>📏 Instrumentos <span class="cuenta" id="cuenta-instrumento">0</span></h3>
+          <p>Aparatos para medir, observar, registrar o controlar.</p>
+        </div>
+        <div class="lista" id="lista-instrumento"></div>
+        <button type="button" class="btn secondary add" data-accion="add-medio" data-tipo="instrumento">+ Agregar instrumento</button>
+      </div>
+    </section>
+
+    <!-- ===== 4. Capacidad corporal ampliada ===== -->
+    <section class="seccion" id="capacidad" data-seccion="capacidad" aria-labelledby="h-capacidad">
+      <div class="sec-head">
+        <span class="sec-num" aria-hidden="true">03</span>
+        <div>
+          <h2 id="h-capacidad">Capacidad corporal ampliada</h2>
+          <p class="sec-desc">¿Qué parte del cuerpo o acción humana (fuerza, precisión, alcance…) amplía o sustituye cada medio técnico? Puedes editar la tabla directamente.</p>
+        </div>
+        <span class="estado" data-estado="capacidad"></span>
+      </div>
+      <div class="card tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th scope="col">Medio técnico</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Función</th>
+              <th scope="col">Capacidad humana ampliada / sustituida</th>
+            </tr>
+          </thead>
+          <tbody id="tablaCuerpo"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== 5. Necesidad y alternativa ===== -->
+    <section class="seccion" id="necesidad" data-seccion="necesidad" aria-labelledby="h-necesidad">
+      <div class="sec-head">
+        <span class="sec-num" aria-hidden="true">04</span>
+        <div>
+          <h2 id="h-necesidad">Necesidad y alternativa sin tecnología actual</h2>
+          <p class="sec-desc">Compara cómo se resuelve hoy y cómo se resolvería sin la tecnología de ahora.</p>
+        </div>
+        <span class="estado" data-estado="necesidad"></span>
+      </div>
+      <div class="dos-col">
+        <div class="card dc-card dc-hoy">
+          <label class="campo">
+            <span class="dc-titulo">Necesidad que satisface</span>
+            <textarea rows="7" data-bind="datos.necesidad" placeholder="Describe la necesidad que cubre este proceso."></textarea>
+          </label>
+        </div>
+        <div class="card dc-card dc-antes">
+          <label class="campo">
+            <span class="dc-titulo">¿Cómo se cubriría sin la tecnología actual?</span>
+            <textarea rows="7" data-bind="alternativa" placeholder="Imagina el proceso sin las máquinas y herramientas de hoy: ¿qué se haría y con qué?"></textarea>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 6. Organización del trabajo ===== -->
+    <section class="seccion" id="organizacion" data-seccion="organizacion" aria-labelledby="h-organizacion">
+      <div class="sec-head">
+        <span class="sec-num" aria-hidden="true">05</span>
+        <div>
+          <h2 id="h-organizacion">Organización del trabajo</h2>
+          <p class="sec-desc">¿Cuántas personas trabajan, cómo se organizan y qué hace cada una?</p>
+        </div>
+        <span class="estado" data-estado="organizacion"></span>
+      </div>
+
+      <div class="card form-grid">
+        <div class="campo full">
+          <span>Número de personas involucradas</span>
+          <div class="contador-personas"><strong id="numPersonas">0</strong> <span id="numPersonasTxt">personas registradas</span> <small>(se calcula con las tarjetas de abajo)</small></div>
+        </div>
+        <label class="campo">
+          <span>¿Cómo están organizadas?</span>
+          <textarea rows="4" data-bind="equipo" placeholder="Ej. Trabajan en cadena, cada quien en una estación…"></textarea>
+        </label>
+        <label class="campo">
+          <span>¿Cómo organizan su trabajo?</span>
+          <textarea rows="4" data-bind="trabajo" placeholder="Ej. Se reparten tareas por turnos, hay un encargado que coordina…"></textarea>
+        </label>
+      </div>
+
+      <div class="lista" id="listaPersonas"></div>
+      <button type="button" class="btn secondary add" data-accion="add-persona">+ Agregar integrante</button>
+    </section>
+
+    <!-- ===== 7. Pasos del proceso ===== -->
+    <section class="seccion" id="proceso" data-seccion="proceso" aria-labelledby="h-proceso">
+      <div class="sec-head">
+        <span class="sec-num" aria-hidden="true">06</span>
+        <div>
+          <h2 id="h-proceso">Pasos del proceso</h2>
+          <p class="sec-desc">Construye la línea de tiempo. Reordena con ↑ ↓ o arrastrando el asa ⠿ en computadora.</p>
+        </div>
+        <span class="estado" data-estado="proceso"></span>
+      </div>
+      <ol class="timeline" id="listaPasos"></ol>
+      <button type="button" class="btn secondary add" data-accion="add-paso">+ Agregar paso</button>
+    </section>
+
+    <!-- ===== 8. Conclusión ===== -->
+    <section class="seccion" id="conclusion" data-seccion="conclusion" aria-labelledby="h-conclusion">
+      <div class="sec-head">
+        <span class="sec-num" aria-hidden="true">07</span>
+        <div>
+          <h2 id="h-conclusion">Conclusión</h2>
+          <p class="sec-desc">Resume tu análisis respondiendo estas preguntas:</p>
+        </div>
+        <span class="estado" data-estado="conclusion"></span>
+      </div>
+      <div class="card">
+        <ul class="guia">
+          <li>¿Qué necesidad resuelve el proceso?</li>
+          <li>¿Qué tecnología utiliza?</li>
+          <li>¿Qué capacidades humanas amplía?</li>
+          <li>¿Cómo se organiza el trabajo?</li>
+          <li>¿Por qué es importante el proceso?</li>
+        </ul>
+        <label class="campo">
+          <span>Conclusión general</span>
+          <textarea rows="8" data-bind="conclusion" placeholder="Escribe aquí tu conclusión del análisis."></textarea>
+        </label>
+        <div class="acciones fin">
+          <button type="button" class="btn" data-accion="exportar">🖨️ Exportar proyecto</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="pie">OxygeNMedia · Tus datos se guardan solo en este navegador (localStorage).</footer>
+  </main>
+</div>
+
+<!-- Aviso previo a exportar (no bloquea) -->
+<dialog id="dlgExportar" aria-labelledby="dlgTitulo">
+  <h2 id="dlgTitulo">Antes de exportar</h2>
+  <div id="dlgCuerpo"></div>
+  <div class="dlg-acc">
+    <button type="button" class="btn secondary" data-accion="cerrar-dlg">Seguir editando</button>
+    <button type="button" class="btn" data-accion="imprimir-ok">Exportar de todos modos</button>
+  </div>
+</dialog>
+
+<!-- Versión limpia para impresión / PDF (se genera desde script.js) -->
+<div id="impresion" class="impresion" aria-hidden="true"></div>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
