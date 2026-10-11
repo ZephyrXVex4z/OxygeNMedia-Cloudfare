@@ -91,7 +91,7 @@ async function generar(body, modelo = MODELO) {
 export async function llamarGemini(
   contenidos,
   {
-    maxOutputTokens = 8192,
+    maxOutputTokens = 64000,
     systemInstruction = null,
     thinkingLevel = "minimal"
   } = {}
