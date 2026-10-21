@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Iniciar sesión · NantiX</title>
+<link rel="stylesheet" href="../styles.css">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("nx-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
+</head>
+<body>
+<main>
+  <form id="loginForm" class="login-card">
+    <h1 class="logo">Nanti<b>X</b></h1>
+    <label>Correo electrónico<input type="email" name="email" autocomplete="username" required></label>
+    <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
+    <p id="loginError" class="error" role="alert"></p>
+    <button class="btn primary" type="submit">Iniciar sesión</button>
+    <a class="btn link" href="../">Volver sin iniciar sesión</a>
+  </form>
+</main>
+<script type="module" src="login.js"></script>
+</body>
+</html>
