@@ -3,31 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NantiXBase</title>
+<title>NantiX</title>
 <link rel="stylesheet" href="styles.css">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("nx-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
 </head>
 <body>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<main id="login" hidden>
-  <form id="loginForm" class="login-card">
-    <h1 class="logo">Nanti<b>X</b>Base</h1>
-    <label>Correo electrónico<input type="email" name="email" autocomplete="username" required></label>
-    <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
-    <p id="loginError" class="error" role="alert"></p>
-    <button class="btn primary" type="submit">Iniciar sesión</button>
-    <button class="btn link" type="button" id="resetBtn">Recuperar contraseña</button>
-  </form>
-</main>
-
-<div id="app" hidden>
+<div id="app">
   <header class="bar">
     <h1 class="logo">Nanti<b>X</b>Base</h1>
     <div class="bar-right">
       <span id="who" class="who"></span>
       <button class="btn" id="themeBtn" aria-label="Cambiar tema">Tema</button>
-      <button class="btn" id="logoutBtn">Cerrar sesión</button>
+      <button class="btn" id="logoutBtn" hidden>Cerrar sesión</button>
+      <a class="btn primary" id="loginLink" href="login/" hidden>Iniciar sesión</a>
     </div>
   </header>
 
