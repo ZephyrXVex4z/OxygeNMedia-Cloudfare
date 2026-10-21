@@ -3,7 +3,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-aut
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDlFwAxxc_aSwnS4x6qzdy8HRxg5K51__A",
+  apiKey: "AIzaSyDlFwAxxc_aSwnS4x6qzdy8HRXg5K51__A",
   authDomain: "nantixdatabase.firebaseapp.com",
   projectId: "nantixdatabase",
   storageBucket: "nantixdatabase.firebasestorage.app",
