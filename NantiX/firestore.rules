@@ -3,11 +3,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
-    // Claim "admin" asignado únicamente con Firebase Admin SDK (ver set-admin.js)
-    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    // Toda cuenta existente es administradora (lectura pública, escritura solo con sesión).
+    // La seguridad depende de que las cuentas solo se creen desde la consola.
+    function isAdmin() { return signedIn(); }
 
     match /users/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update: if isAdmin()
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
@@ -17,7 +18,7 @@ service cloud.firestore {
     }
 
     match /fieldDefinitions/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update: if isAdmin()
         && request.resource.data.label is string
         && request.resource.data.label.size() > 0
@@ -28,7 +29,7 @@ service cloud.firestore {
     }
 
     match /settings/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
