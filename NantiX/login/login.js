@@ -15,5 +15,10 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault(); err.textContent = "";
   const f = new FormData(e.target);
   try { await signInWithEmailAndPassword(auth, f.get("email").trim(), f.get("password")); }
-  catch (x) { err.textContent = MSG[x.code] || "Correo o contraseña incorrectos."; console.error(x.code); }
+  catch (x) {
+    const bad = ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email"];
+    const base = MSG[x.code] || (bad.includes(x.code) ? "Correo o contraseña incorrectos." : "No se pudo iniciar sesión.");
+    err.textContent = `${base} (código: ${x.code || x.message})`;
+    console.error(x);
+  }
 });
