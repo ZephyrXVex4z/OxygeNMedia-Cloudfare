@@ -1,5 +1,5 @@
 import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail }
+import { onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, query, orderBy,
   limit, startAfter, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -49,29 +49,13 @@ function confirmDlg(msg, okLabel = "Eliminar") {
 }
 
 /* ---------- Autenticación ---------- */
-$("#loginForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const f = new FormData(e.target); $("#loginError").textContent = "";
-  try { await signInWithEmailAndPassword(auth, f.get("email"), f.get("password")); }
-  catch { $("#loginError").textContent = "Correo o contraseña incorrectos, o la cuenta no tiene acceso."; }
-});
-$("#resetBtn").onclick = async () => {
-  const email = $("#loginForm").email.value.trim();
-  if (!email) { $("#loginError").textContent = "Escribe tu correo para recuperar la contraseña."; return; }
-  try { await sendPasswordResetEmail(auth, email); } catch {}
-  $("#loginError").textContent = "Si la cuenta existe, se envió un correo de recuperación.";
-};
 $("#logoutBtn").onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, async user => {
-  $("#login").hidden = !!user; $("#app").hidden = !user;
-  if (!user) return;
-  try {
-    const tok = await user.getIdTokenResult(true);
-    S.admin = tok.claims.admin === true;
-  } catch { S.admin = false; toast("La sesión caducó. Inicia sesión de nuevo."); return signOut(auth); }
-  $("#who").textContent = `${user.email} · ${S.admin ? "Administrador" : "Lectura"}`;
-  document.querySelectorAll(".admin-only").forEach(n => n.hidden = !S.admin);
+  S.admin = !!user;
+  $("#who").textContent = user ? `${user.email} · Administrador` : "Solo lectura";
+  $("#logoutBtn").hidden = !user; $("#loginLink").hidden = !!user;
+  document.querySelectorAll(".admin-only").forEach(n => n.hidden = !user);
   try { await loadFields(); await loadRecords(true); } catch (e) { fail(e); $("#loading").hidden = true; }
 });
 
@@ -267,4 +251,3 @@ function openRecordForm(r) {
   title.focus();
 }
 $("#addRecord").onclick = () => openRecordForm();
-                                                                          
