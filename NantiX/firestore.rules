@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    // Claim "admin" asignado únicamente con Firebase Admin SDK (ver set-admin.js)
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+
+    match /users/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.values is map;
+      allow delete: if isAdmin();
+    }
+
+    match /fieldDefinitions/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin()
+        && request.resource.data.label is string
+        && request.resource.data.label.size() > 0
+        && request.resource.data.label.size() <= 80
+        && request.resource.data.type in
+           ['text','textarea','number','date','boolean','select','url'];
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Todo lo demás, denegado (incluida cualquier colección de roles)
+    match /{document=**} { allow read, write: if false; }
+  }
+}
