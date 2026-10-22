@@ -75,7 +75,7 @@ export function openPostForm(p, onSaved, user) {
   const save = h("button", { class: "btn primary", type: "button", onclick: async () => {
     const r = build(); err.textContent = r.error || ""; if (r.error) return;
     save.disabled = true; save.textContent = "Guardando…";
-    try { await savePost(p?.id, r.data, user); closeDlg(); toast("Publicación guardada"); onSaved(); }
+    try { await savePost(p, r.data, user); closeDlg(); toast("Publicación guardada"); onSaved(); }
     catch (e) { fail(e); save.disabled = false; save.textContent = "Guardar"; }
   } }, "Guardar");
   openDlg(h("h2", {}, isNew ? "Nueva publicación" : "Editar publicación"),
