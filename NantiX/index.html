@@ -4,47 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NantiX</title>
+<meta name="description" content="NantiX: biblioteca digital de enlaces de descarga de música, juegos, emuladores, aplicaciones y más.">
+<meta property="og:title" content="NantiX">
+<meta property="og:description" content="Biblioteca digital de enlaces de descarga organizada por categorías.">
+<meta property="og:type" content="website">
 <link rel="stylesheet" href="styles.css">
-<script>try{document.documentElement.dataset.theme=localStorage.getItem("nx-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("nx-theme")||"dark"}catch(e){document.documentElement.dataset.theme="dark"}</script>
 </head>
 <body>
 <div id="toast" role="status" aria-live="polite"></div>
-
-<div id="app">
-  <header class="bar">
-    <h1 class="logo">Nanti<b>X</b>Base</h1>
-    <div class="bar-right">
-      <span id="who" class="who"></span>
-      <button class="btn" id="themeBtn" aria-label="Cambiar tema">Tema</button>
-      <button class="btn" id="logoutBtn" hidden>Cerrar sesión</button>
-      <a class="btn primary" id="loginLink" href="login/" hidden>Iniciar sesión</a>
-    </div>
-  </header>
-
-  <section class="tools">
-    <input id="q" type="search" placeholder="Buscar por título" aria-label="Buscar por título">
-    <select id="sort" aria-label="Ordenar">
-      <option value="titleLower:asc">Título A–Z</option>
-      <option value="titleLower:desc">Título Z–A</option>
-      <option value="updatedAt:desc">Modificación reciente</option>
-      <option value="createdAt:desc">Creación reciente</option>
-      <option value="createdAt:asc">Creación antigua</option>
-    </select>
-    <select id="filterField" aria-label="Filtrar por característica"><option value="">Sin filtro</option></select>
-    <span id="filterBox"></span>
-    <span class="admin-only" hidden>
-      <button class="btn primary" id="addRecord">+ Añadir usuario</button>
-      <button class="btn" id="addField">+ Añadir característica</button>
-      <button class="btn" id="manageFields">Características</button>
-    </span>
-  </section>
-
-  <div id="loading" class="loading">Cargando…</div>
-  <div id="empty" class="empty" hidden>Todavía no hay fichas disponibles.</div>
-  <section id="grid" class="grid" aria-live="polite"></section>
-  <div class="more"><button class="btn" id="moreBtn" hidden>Cargar más</button></div>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header class="top">
+  <button class="btn icon" id="menuBtn" type="button" aria-label="Categorías" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="logo" href="#/home">Nanti<b>X</b></a>
+  <form id="searchForm" role="search"><input id="q" type="search" aria-label="Buscar" placeholder="Buscar título, artista, plataforma o etiqueta"></form>
+  <div class="top-r">
+    <span id="who" class="who"></span>
+    <button class="btn icon" id="themeBtn" type="button" aria-label="Cambiar tema">◐</button>
+    <button class="btn" id="logoutBtn" type="button" hidden>Cerrar sesión</button>
+    <a class="btn primary" id="loginLink" href="login/" hidden>Iniciar sesión</a>
+  </div>
+</header>
+<div class="layout">
+  <nav id="side" class="side" aria-label="Categorías"></nav>
+  <main id="main" tabindex="-1"></main>
 </div>
-
+<footer class="foot">
+  <p>NantiX organiza enlaces a archivos alojados en servicios externos y no aloja los archivos. Publica solo contenido que tengas derecho a distribuir.</p>
+  <button class="btn link" id="reportGen" type="button">Reportar contenido o un enlace roto</button>
+</footer>
 <dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
 <script type="module" src="app.js"></script>
 </body>
