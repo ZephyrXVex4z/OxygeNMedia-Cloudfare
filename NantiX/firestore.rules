@@ -7,21 +7,26 @@ service cloud.firestore {
     // desactiva el registro público en Authentication → Settings → User actions).
     function isAdmin() { return signedIn(); }
 
-    function validPost(d) {
+    function validPost(d, s) {
       return d.title is string && d.title.size() > 0 && d.title.size() <= 200
         && d.category is string && d.category.size() <= 40
-        && d.status in ['published', 'draft']
+        && d.status == s
         && d.meta is map
         && d.downloads is list && d.downloads.size() <= 20
-        && d.keywords is list && d.keywords.size() <= 60
+        && d.scopes is list && d.scopes.size() <= 200
         && d.tags is list && d.tags.size() <= 30;
     }
 
-    // Biblioteca: el público solo lee lo publicado; borradores solo con sesión.
+    // Publicadas: lectura pública. Escritura solo con sesión.
     match /posts/{id} {
-      allow read: if resource.data.status == 'published' || signedIn();
-      allow create, update: if isAdmin() && validPost(request.resource.data);
+      allow read: if true;
+      allow create, update: if isAdmin() && validPost(request.resource.data, 'published');
       allow delete: if isAdmin();
+    }
+    // Borradores: solo con sesión.
+    match /drafts/{id} {
+      allow read, delete: if signedIn();
+      allow create, update: if isAdmin() && validPost(request.resource.data, 'draft');
     }
 
     // Reportes: cualquiera puede crear (validado); solo administradores leen y borran.
