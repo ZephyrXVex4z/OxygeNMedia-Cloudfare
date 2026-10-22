@@ -1,253 +1,142 @@
-import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged, signOut }
-  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, query, orderBy,
-  limit, startAfter, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { auth } from "./firebase-config.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { CATS, NAV, navLabel, navFilter, KIND_FIELDS, FILTERS, norm } from "./js/categories.js";
+import { fetchPosts, getPost, patchPost, removePost } from "./js/data.js";
+import { $, h, toast, fail, dlg, closeDlg, confirmDlg, card, skeletons, showPost } from "./js/ui.js";
+import { openPostForm, openReport, openReportsList } from "./js/admin.js";
 
-const $ = s => document.querySelector(s);
-const PAGE = 24;
-const TYPES = { text:"Texto corto", textarea:"Texto largo", number:"Número", date:"Fecha",
-  boolean:"Verdadero o falso", select:"Lista desplegable", url:"URL" };
-const S = { admin:false, fields:[], records:[], last:null, more:false };
+const S = { user: null, key: "home", q: "", sig: "", items: [], cursor: null, more: false, sort: "desc", filters: {} };
+let lastList = "#/home";
+const main = $("#main");
+const refresh = () => show(S.key, S.q, true);
+const back = () => { location.hash = lastList; };
+const err = e => e?.code === "failed-precondition" ? toast("Falta crear un índice de Firestore (consulta el README).") : fail(e);
 
-function h(tag, attrs = {}, ...kids) {
-  const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
-    else if (v === true) el.setAttribute(k, "");
-    else if (v !== false && v != null) el.setAttribute(k, v);
-  }
-  el.append(...kids.flat().filter(x => x != null));
-  return el;
-}
-function toast(msg) {
-  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 3500);
-}
-function fail(e) {
-  console.error(e);
-  toast(e?.code === "permission-denied" ? "No tienes permiso para esta acción." : "Ocurrió un error: " + (e?.message || e));
-}
-
-/* ---------- Tema ---------- */
+/* ---------- Cabecera, tema, sesión ---------- */
 $("#themeBtn").onclick = () => {
   const n = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-  document.documentElement.dataset.theme = n;
-  try { localStorage.setItem("nx-theme", n); } catch {}
+  document.documentElement.dataset.theme = n; try { localStorage.setItem("nx-theme", n); } catch {}
 };
-
-/* ---------- Diálogos ---------- */
-const dlg = $("#dlg"), dlgForm = $("#dlgForm");
-function openDlg(...nodes) { dlgForm.replaceChildren(...nodes); if (!dlg.open) dlg.showModal(); }
-const closeDlg = () => dlg.open && dlg.close();
-function confirmDlg(msg, okLabel = "Eliminar") {
-  return new Promise(res => {
-    openDlg(h("h2", {}, "Confirmar"), h("p", {}, msg), h("div", { class:"row" },
-      h("button", { class:"btn", type:"button", onclick:() => { closeDlg(); res(false); } }, "Cancelar"),
-      h("button", { class:"btn danger", type:"button", onclick:() => { closeDlg(); res(true); } }, okLabel)));
-  });
-}
-
-/* ---------- Autenticación ---------- */
 $("#logoutBtn").onclick = () => signOut(auth);
+$("#menuBtn").onclick = e => { const o = $("#side").classList.toggle("open"); e.currentTarget.setAttribute("aria-expanded", o); };
+$("#searchForm").addEventListener("submit", e => {
+  e.preventDefault(); const t = $("#q").value.trim();
+  location.hash = "#/c/" + (S.key === "home" ? "all" : S.key) + (t ? "?q=" + encodeURIComponent(t) : "");
+});
+$("#reportGen").onclick = () => openReport(null);
+dlg.addEventListener("close", () => { if (location.hash.startsWith("#/p/")) back(); });
 
-onAuthStateChanged(auth, async user => {
-  S.admin = !!user;
-  $("#who").textContent = user ? `${user.email} · Administrador` : "Solo lectura";
-  $("#logoutBtn").hidden = !user; $("#loginLink").hidden = !!user;
-  document.querySelectorAll(".admin-only").forEach(n => n.hidden = !user);
-  try { await loadFields(); await loadRecords(true); } catch (e) { fail(e); $("#loading").hidden = true; }
+onAuthStateChanged(auth, u => {
+  S.user = u; $("#who").textContent = u?.email || ""; $("#logoutBtn").hidden = !u; $("#loginLink").hidden = !!u;
+  S.sig = ""; route();
 });
 
-/* ---------- Definiciones de campos ---------- */
-async function loadFields() {
-  const snap = await getDocs(query(collection(db, "fieldDefinitions"), orderBy("order")));
-  S.fields = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-  const sel = $("#filterField"), cur = sel.value;
-  sel.replaceChildren(h("option", { value:"" }, "Sin filtro"),
-    ...S.fields.map(f => h("option", { value:f.id }, f.label)));
-  sel.value = S.fields.some(f => f.id === cur) ? cur : "";
-  renderFilterBox();
-}
-function renderFilterBox() {
-  const f = S.fields.find(x => x.id === $("#filterField").value), box = $("#filterBox");
-  if (!f) { box.replaceChildren(); return; }
-  let c;
-  if (f.type === "select") c = h("select", {}, h("option", { value:"" }, "Todos"), ...(f.options||[]).map(o => h("option", { value:o }, o)));
-  else if (f.type === "boolean") c = h("select", {}, h("option", { value:"" }, "Todos"), h("option", { value:"true" }, "Sí"), h("option", { value:"false" }, "No"));
-  else c = h("input", { type: f.type === "number" ? "number" : f.type === "date" ? "date" : "text",
-    placeholder: f.type === "number" ? "Mínimo" : "Contiene", "aria-label":"Valor del filtro" });
-  c.id = "filterVal"; c.addEventListener("input", renderGrid); box.replaceChildren(c);
-}
-$("#filterField").onchange = () => { renderFilterBox(); renderGrid(); };
-
-function fieldControl(f, val) {
-  const common = { id:"fv_" + f.id, name:f.id, required: f.required && f.type !== "boolean" };
-  let c;
-  switch (f.type) {
-    case "textarea": c = h("textarea", { ...common, maxlength:5000 }); c.value = val ?? ""; break;
-    case "number": c = h("input", { ...common, type:"number", step:"any" }); c.value = val ?? ""; break;
-    case "date": c = h("input", { ...common, type:"date" }); c.value = val ?? ""; break;
-    case "url": c = h("input", { ...common, type:"url", maxlength:2000 }); c.value = val ?? ""; break;
-    case "boolean": c = h("input", { ...common, type:"checkbox" }); c.checked = val === true;
-      return h("label", { class:"chk" }, c, f.label);
-    case "select": c = h("select", common, h("option", { value:"" }, ""), ...(f.options||[]).map(o => h("option", { value:o }, o))); c.value = val ?? ""; break;
-    default: c = h("input", { ...common, type:"text", maxlength:500 }); c.value = val ?? "";
-  }
-  return h("label", {}, f.label + (f.required ? " *" : ""), c);
-}
-function readControl(f) {
-  const el = $("#fv_" + f.id);
-  if (f.type === "boolean") return el.checked;
-  const v = el.value.trim();
-  if (v === "") return null;
-  return f.type === "number" ? Number(v) : v;
+/* ---------- Menú ---------- */
+const href = k => k === "home" ? "#/home" : "#/c/" + k;
+function renderNav() {
+  $("#side").replaceChildren(
+    ...NAV.map(g => h("div", { class: "ng" }, h("h4", {}, g.title),
+      ...g.items.map(([k, l, i]) => h("a", { href: href(k), "aria-current": k === S.key ? "page" : null }, h("span", { "aria-hidden": "true" }, i), l)))),
+    S.user && h("div", { class: "ng" }, h("h4", {}, "Administración"),
+      h("button", { class: "btn primary", type: "button", onclick: () => openPostForm(null, refresh, S.user) }, "+ Nueva publicación"),
+      h("a", { href: "#/c/drafts", "aria-current": S.key === "drafts" ? "page" : null }, h("span", { "aria-hidden": "true" }, "📝"), "Borradores"),
+      h("button", { class: "btn", type: "button", onclick: openReportsList }, "Reportes")));
 }
 
-function openFieldForm(f) {
-  const isNew = !f;
-  const label = h("input", { name:"label", required:true, maxlength:80, value:f?.label ?? "" });
-  const type = h("select", { name:"type" }, ...Object.entries(TYPES).map(([k, v]) => h("option", { value:k }, v)));
-  type.value = f?.type ?? "text";
-  const req = h("input", { type:"checkbox", checked: !!f?.required });
-  const card = h("input", { type:"checkbox", checked: !!f?.showInCard });
-  const opts = h("textarea", {}); opts.value = (f?.options || []).join("\n");
-  const optsWrap = h("label", {}, "Opciones (una por línea)", opts);
-  const sync = () => optsWrap.hidden = type.value !== "select"; type.onchange = sync; sync();
-  openDlg(h("h2", {}, isNew ? "Añadir característica" : "Editar característica"),
-    h("label", {}, "Nombre visible", label), h("label", {}, "Tipo de dato", type), optsWrap,
-    h("label", { class:"chk" }, req, "Obligatorio"),
-    h("label", { class:"chk" }, card, "Mostrar en la tarjeta"),
-    h("div", { class:"row" },
-      h("button", { class:"btn", type:"button", onclick:closeDlg }, "Cancelar"),
-      h("button", { class:"btn primary", type:"button", onclick: async () => {
-        if (!label.value.trim()) { label.focus(); return; }
-        const options = opts.value.split("\n").map(s => s.trim()).filter(Boolean);
-        if (type.value === "select" && !options.length) { toast("Añade al menos una opción."); return; }
-        if (!isNew && f.type !== type.value &&
-            !(await confirmDlg("Cambiar el tipo no modifica los valores ya guardados. Los que no sean compatibles con el nuevo tipo pueden mostrarse mal o quedar vacíos al editarse. ¿Continuar?", "Cambiar tipo"))) return;
-        const data = { label:label.value.trim(), type:type.value, required:req.checked,
-          showInCard:card.checked, options: type.value === "select" ? options : [] };
-        try {
-          if (isNew) await addDoc(collection(db, "fieldDefinitions"), { ...data, order: S.fields.length ? Math.max(...S.fields.map(x => x.order)) + 1 : 0 });
-          else await updateDoc(doc(db, "fieldDefinitions", f.id), data);
-          closeDlg(); toast("Característica guardada"); await loadFields(); renderGrid();
-        } catch (e) { fail(e); }
-      } }, "Guardar")));
-  label.focus();
+/* ---------- Rutas ---------- */
+async function route() {
+  const hash = location.hash || "#/home", [path, qs] = hash.slice(1).split("?"), parts = path.split("/").filter(Boolean);
+  if (parts[0] === "p") { if (!S.sig) await show("home", ""); return openById(parts[1]); }
+  if (dlg.open) closeDlg();
+  lastList = hash;
+  show(parts[0] === "c" ? parts[1] || "home" : "home", new URLSearchParams(qs).get("q") || "");
 }
-function openFieldManager() {
-  const list = h("div", {});
-  const move = async (i, d) => {
-    const a = S.fields[i], b = S.fields[i + d]; if (!b) return;
-    const bt = writeBatch(db);
-    bt.update(doc(db, "fieldDefinitions", a.id), { order:b.order });
-    bt.update(doc(db, "fieldDefinitions", b.id), { order:a.order });
-    try { await bt.commit(); await loadFields(); openFieldManager(); renderGrid(); } catch (e) { fail(e); }
-  };
-  S.fields.forEach((f, i) => list.append(h("div", { class:"frow" }, h("span", {}, `${f.label} (${TYPES[f.type]})`),
-    h("button", { class:"btn", type:"button", "aria-label":"Subir", onclick:() => move(i, -1) }, "↑"),
-    h("button", { class:"btn", type:"button", "aria-label":"Bajar", onclick:() => move(i, 1) }, "↓"),
-    h("button", { class:"btn", type:"button", onclick:() => openFieldForm(f) }, "Editar"),
-    h("button", { class:"btn danger", type:"button", onclick: async () => {
-      if (!(await confirmDlg(`Se eliminará la característica «${f.label}». Los valores ya guardados en las fichas permanecen en la base de datos pero dejarán de mostrarse. ¿Continuar?`))) return;
-      try { await deleteDoc(doc(db, "fieldDefinitions", f.id)); await loadFields(); renderGrid(); toast("Característica eliminada"); openFieldManager(); } catch (e) { fail(e); }
-    } }, "Eliminar"))));
-  if (!S.fields.length) list.append(h("p", {}, "Aún no hay características definidas."));
-  openDlg(h("h2", {}, "Características"), list, h("div", { class:"row" },
-    h("button", { class:"btn", type:"button", onclick:() => openFieldForm() }, "+ Añadir característica"),
-    h("button", { class:"btn primary", type:"button", onclick:closeDlg }, "Cerrar")));
-}
-$("#addField").onclick = () => openFieldForm();
-$("#manageFields").onclick = openFieldManager;
+window.addEventListener("hashchange", route);
 
-/* ---------- Fichas ---------- */
-function fmt(f, v) {
-  if (v == null || v === "") return "";
-  if (f.type === "boolean") return v ? "Sí" : "No";
-  return String(v);
-}
-function valueNode(f, v) {
-  const t = fmt(f, v);
-  if (f.type === "url" && /^https?:\/\//i.test(t)) return h("a", { href:t, target:"_blank", rel:"noopener noreferrer" }, t);
-  return t;
-}
-async function loadRecords(reset) {
-  $("#loading").hidden = false;
-  if (reset) { S.records = []; S.last = null; }
-  const term = $("#q").value.trim().toLowerCase();
-  const [fld, dir] = $("#sort").value.split(":");
-  const cs = [];
-  if (term) cs.push(where("titleLower", ">=", term), where("titleLower", "<=", term + "\uf8ff"), orderBy("titleLower"));
-  else cs.push(orderBy(fld, dir));
-  if (S.last) cs.push(startAfter(S.last));
-  cs.push(limit(PAGE));
+const ctx = {
+  get admin() { return !!S.user; },
+  edit: p => openPostForm(p, refresh, S.user),
+  report: p => openReport(p),
+  share: async p => { try { await navigator.clipboard.writeText(location.origin + location.pathname + "#/p/" + p.id); toast("Enlace copiado"); } catch { toast("No se pudo copiar el enlace."); } },
+  remove: async p => { if (!(await confirmDlg(`Se eliminará «${p.title}». Esta acción no se puede deshacer.`))) return; try { await removePost(p.id); closeDlg(); toast("Publicación eliminada"); refresh(); } catch (e) { fail(e); } },
+  toggle: async p => { try { await patchPost(p.id, { status: p.status === "published" ? "draft" : "published" }); closeDlg(); toast("Estado actualizado"); refresh(); } catch (e) { fail(e); } }
+};
+async function openById(id) {
   try {
-    const snap = await getDocs(query(collection(db, "users"), ...cs));
-    S.records.push(...snap.docs.map(d => ({ id:d.id, ...d.data() })));
-    S.last = snap.docs.at(-1) ?? S.last; S.more = snap.size === PAGE;
-  } catch (e) { fail(e); }
-  $("#loading").hidden = true; renderGrid();
+    const p = await getPost(id);
+    if (!p) { toast("Publicación no encontrada."); return back(); }
+    document.title = p.title + " · NantiX"; showPost(p, ctx);
+  } catch { toast("Publicación no disponible."); back(); }
 }
-function passes(r) {
-  const f = S.fields.find(x => x.id === $("#filterField").value), c = $("#filterVal");
-  if (!f || !c || c.value === "") return true;
-  const v = r.values?.[f.id];
-  if (f.type === "number") return typeof v === "number" && v >= Number(c.value);
-  if (f.type === "boolean") return String(v === true) === c.value;
-  if (f.type === "select" || f.type === "date") return v === c.value;
-  return String(v ?? "").toLowerCase().includes(c.value.toLowerCase());
+async function show(key, q, force) {
+  const sig = [key, q, !!S.user].join("|");
+  if (sig === S.sig && !force) return;
+  Object.assign(S, { key, q, sig, filters: {}, sort: "desc" });
+  $("#q").value = q; renderNav(); $("#side").classList.remove("open");
+  document.title = (key === "home" ? "" : (key === "drafts" ? "Borradores" : navLabel(key)) + " · ") + "NantiX";
+  key === "home" && !q ? home() : list(true);
 }
-function renderGrid() {
-  const rows = S.records.filter(passes), grid = $("#grid");
-  grid.replaceChildren(...rows.map(r => h("button", { class:"card", type:"button", onclick:() => openRecord(r) },
-    h("h2", {}, r.title),
-    h("dl", {}, ...S.fields.filter(f => f.showInCard).flatMap(f => [h("dt", {}, f.label), h("dd", {}, valueNode(f, r.values?.[f.id]))])))));
-  $("#empty").hidden = rows.length > 0 || !$("#loading").hidden;
-  $("#empty").textContent = S.records.length ? "Ninguna ficha coincide con el filtro." : "Todavía no hay fichas disponibles.";
+
+/* ---------- Inicio ---------- */
+const SECTIONS = [
+  ["Destacados", { field: "featured", value: true }, null],
+  ["Publicaciones recientes", null, "all"],
+  ["Música reciente", { field: "group", value: "music" }, "music"],
+  ["Juegos y aplicaciones", { field: "group", op: "in", value: ["android", "ios", "pc", "consoles", "apps"] }, null],
+  ["Emuladores y herramientas", { field: "group", op: "in", value: ["emulators", "tools"] }, "emulators"]
+];
+async function home() {
+  const sig = S.sig;
+  main.replaceChildren(h("h1", {}, "Biblioteca digital"), h("p", { class: "mute" }, "Enlaces de descarga organizados por categoría."),
+    h("nav", { class: "chips", "aria-label": "Categorías" }, ...NAV.slice(1).flatMap(g => g.items).filter(i => i[0] !== "music").map(([k, l, i]) => h("a", { class: "chip", href: href(k) }, i + " " + l))),
+    h("div", { id: "secs" }, h("div", { class: "grid" }, ...skeletons(6))));
+  let res;
+  try { res = await Promise.all(SECTIONS.map(s => fetchPosts({ filter: s[1], size: 8 }).then(r => r.items))); } catch (e) { err(e); res = []; }
+  if (sig !== S.sig) return;
+  const secs = SECTIONS.map((s, i) => res[i]?.length && h("section", { class: "sec" },
+    h("div", { class: "sech" }, h("h2", {}, s[0]), s[2] && h("a", { href: href(s[2]) }, "Ver todo")), h("div", { class: "grid" }, ...res[i].map(card)))).filter(Boolean);
+  $("#secs").replaceChildren(...(secs.length ? secs : [h("div", { class: "empty" }, "Todavía no hay publicaciones.")]));
+}
+
+/* ---------- Listados ---------- */
+const kindOf = k => k === "music" ? "music" : CATS[k]?.kind;
+async function list(reset) {
+  const sig = S.sig, tok = S.q.split(/\s+/)[0] || "";
+  if (reset) {
+    Object.assign(S, { items: [], cursor: null, more: false });
+    main.replaceChildren(h("h1", {}, (S.key === "drafts" ? "Borradores" : navLabel(S.key)) + (S.q ? ` · «${S.q}»` : "")), h("div", { id: "tools", class: "tools" }),
+      h("div", { id: "grid", class: "grid" }, ...skeletons(8)), h("p", { id: "state", class: "empty", hidden: true }),
+      h("div", { class: "more" }, h("button", { class: "btn", id: "moreBtn", type: "button", hidden: true, onclick: () => list(false) }, "Cargar más")));
+  }
+  try {
+    const r = await fetchPosts({ status: S.key === "drafts" ? "draft" : "published", filter: navFilter(S.key), token: tok, dir: S.sort === "asc" ? "asc" : "desc", cursor: S.cursor });
+    if (sig !== S.sig) return;
+    S.items.push(...r.items); S.cursor = r.last; S.more = r.more;
+  } catch (e) { err(e); S.more = false; }
+  paintTools(); paintGrid();
+}
+const hasVal = (m, f, v) => { const x = m?.[f]; return Array.isArray(x) ? x.map(String).includes(v) : String(x ?? "") === v; };
+function paintTools() {
+  const kind = kindOf(S.key), box = $("#tools"); if (!box) return;
+  const sort = h("select", { "aria-label": "Ordenar" }, h("option", { value: "desc" }, "Más recientes"), h("option", { value: "asc" }, "Más antiguos"), h("option", { value: "az" }, "Alfabético (cargados)"));
+  sort.value = S.sort;
+  sort.onchange = () => { const old = S.sort; S.sort = sort.value; if (old === "az" || S.sort === "az") paintGrid(); else list(true); };
+  const sels = (FILTERS[kind] || []).map(f => {
+    const def = KIND_FIELDS[kind].find(d => d.k === f), vals = new Set();
+    S.items.forEach(p => { const x = p.meta?.[f]; (Array.isArray(x) ? x : x != null && x !== "" ? [x] : []).forEach(v => vals.add(String(v))); });
+    if (!vals.size) return null;
+    const s = h("select", { "aria-label": def.label }, h("option", { value: "" }, def.label + ": todos"), ...[...vals].sort().map(v => h("option", { value: v }, v)));
+    s.value = S.filters[f] || ""; s.onchange = () => { S.filters[f] = s.value; paintGrid(); }; return s;
+  }).filter(Boolean);
+  box.replaceChildren(sort, ...sels);
+}
+function paintGrid() {
+  const rest = S.q.split(/\s+/).slice(1).map(norm).filter(Boolean);
+  let rows = S.items.filter(p => Object.entries(S.filters).every(([f, v]) => !v || hasVal(p.meta, f, v)) &&
+    rest.every(w => norm(p.title + " " + JSON.stringify(p.meta || {})).includes(w)));
+  if (S.sort === "az") rows = [...rows].sort((a, b) => a.title.localeCompare(b.title, "es"));
+  $("#grid").replaceChildren(...rows.map(card));
+  const st = $("#state"); st.hidden = rows.length > 0 || S.more;
+  st.textContent = S.items.length ? "Ninguna publicación coincide con los filtros." : S.q ? "Sin resultados para la búsqueda." : "Todavía no hay publicaciones en esta sección.";
   $("#moreBtn").hidden = !S.more;
 }
-$("#moreBtn").onclick = () => loadRecords(false);
-$("#sort").onchange = () => loadRecords(true);
-let qt; $("#q").oninput = () => { clearTimeout(qt); qt = setTimeout(() => loadRecords(true), 350); };
-
-function openRecord(r) {
-  openDlg(h("h2", {}, r.title),
-    h("dl", {}, ...S.fields.flatMap(f => [h("dt", {}, f.label), h("dd", {}, valueNode(f, r.values?.[f.id]))])),
-    h("div", { class:"row" },
-      S.admin && h("button", { class:"btn danger", type:"button", onclick: async () => {
-        if (!(await confirmDlg(`Se eliminará la ficha «${r.title}». Esta acción no se puede deshacer.`))) return;
-        try { await deleteDoc(doc(db, "users", r.id)); toast("Ficha eliminada"); await loadRecords(true); } catch (e) { fail(e); }
-      } }, "Eliminar"),
-      S.admin && h("button", { class:"btn", type:"button", onclick:() => openRecordForm(r) }, "Editar"),
-      h("button", { class:"btn primary", type:"button", onclick:closeDlg }, "Cerrar")));
-}
-function openRecordForm(r) {
-  const isNew = !r;
-  const title = h("input", { id:"fv_title", required:true, maxlength:200, value:r?.title ?? "" });
-  openDlg(h("h2", {}, isNew ? "Añadir usuario" : "Editar ficha"),
-    h("label", {}, "Título *", title), ...S.fields.map(f => fieldControl(f, r?.values?.[f.id])),
-    h("p", { id:"formErr", class:"error", role:"alert" }),
-    h("div", { class:"row" },
-      h("button", { class:"btn", type:"button", onclick:closeDlg }, "Cancelar"),
-      h("button", { class:"btn primary", type:"button", onclick: async () => {
-        const t = title.value.trim(), values = {}; let bad = "";
-        if (!t) bad = "El título es obligatorio.";
-        for (const f of S.fields) {
-          const v = readControl(f);
-          if (f.required && f.type !== "boolean" && v == null) bad ||= `«${f.label}» es obligatorio.`;
-          if (f.type === "number" && v != null && !Number.isFinite(v)) bad ||= `«${f.label}» debe ser un número.`;
-          if (f.type === "url" && v != null && !/^https?:\/\/\S+$/i.test(v)) bad ||= `«${f.label}» debe ser una URL http(s) válida.`;
-          if (v != null && !(f.type === "boolean" && v === false && !r?.values?.[f.id] && r === undefined)) values[f.id] = v;
-        }
-        if (bad) { $("#formErr").textContent = bad; return; }
-        try {
-          if (isNew) await addDoc(collection(db, "users"), { title:t, titleLower:t.toLowerCase(), values,
-            createdAt:serverTimestamp(), updatedAt:serverTimestamp(), createdBy:auth.currentUser.uid });
-          else await updateDoc(doc(db, "users", r.id), { title:t, titleLower:t.toLowerCase(), values, updatedAt:serverTimestamp() });
-          closeDlg(); toast("Ficha guardada"); await loadRecords(true);
-        } catch (e) { fail(e); }
-      } }, "Guardar")));
-  title.focus();
-}
-$("#addRecord").onclick = () => openRecordForm();
