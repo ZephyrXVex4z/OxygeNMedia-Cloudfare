@@ -10,7 +10,7 @@ const MSG = {
   "auth/network-request-failed": "Sin conexión. Revisa tu red.",
   "auth/user-disabled": "Esta cuenta está deshabilitada."
 };
-onAuthStateChanged(auth, u => { if (u) location.replace("../"); });
+onAuthStateChanged(auth, u => { if (u) location.replace("/NantiX/"); });
 document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault(); err.textContent = "";
   const f = new FormData(e.target);
