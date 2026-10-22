@@ -2,7 +2,7 @@ import { auth } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { CATS, NAV, navLabel, navFilter, KIND_FIELDS, FILTERS, norm } from "./js/categories.js";
 import { fetchPosts, getPost, patchPost, removePost } from "./js/data.js";
-import { $, h, toast, fail, dlg, closeDlg, confirmDlg, card, skeletons, showPost } from "./js/ui.js";
+import { $, h, toast, fail, dlg, openDlg, closeDlg, confirmDlg, card, skeletons, showPost } from "./js/ui.js";
 import { openPostForm, openReport, openReportsList } from "./js/admin.js";
 
 const S = { user: null, key: "home", q: "", sig: "", items: [], cursor: null, more: false, sort: "desc", filters: {} };
@@ -10,7 +10,15 @@ let lastList = "#/home";
 const main = $("#main");
 const refresh = () => show(S.key, S.q, true);
 const back = () => { location.hash = lastList; };
-const err = e => e?.code === "failed-precondition" ? toast("Falta crear un índice de Firestore (consulta el README).") : fail(e);
+const err = e => {
+  if (e?.code !== "failed-precondition") return fail(e);
+  console.error(e);
+  const u = (e.message || "").match(/https:\/\/console\.firebase\.google\.com\S+/)?.[0];
+  openDlg(h("h2", {}, "Falta un índice de Firestore"),
+    h("p", {}, "Esta consulta necesita un índice. Toca el enlace, pulsa «Crear índice» en Firebase y espera a que termine (unos minutos). Luego recarga."),
+    u ? h("p", {}, h("a", { href: u, target: "_blank", rel: "noopener noreferrer" }, "Crear índice en Firebase")) : h("p", {}, "Crea los índices de firestore.indexes.json desde la consola de Firebase."),
+    h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: closeDlg }, "Cerrar")));
+};
 
 /* ---------- Cabecera, tema, sesión ---------- */
 $("#themeBtn").onclick = () => {
