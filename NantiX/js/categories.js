@@ -30,8 +30,8 @@ export const NAV = [
 ];
 export const navLabel = k => NAV.flatMap(g => g.items).find(i => i[0] === k)?.[1] ?? "Catálogo";
 // Filtro de Firestore para cada entrada del menú
-export const navFilter = k => k === "home" || k === "all" ? null
-  : k === "music" ? { field: "group", value: "music" } : { field: "category", value: k };
+export const navFilter = k => k === "home" || k === "all" || k === "drafts" ? null
+  : { scope: (k === "music" ? "group:" : "cat:") + k };
 
 const T = "text", TA = "textarea", N = "number", D = "date", L = "list", U = "url", S = "select";
 const F = (k, label, type, o = {}) => ({ k, label, type, ...o });
