@@ -1,7 +1,7 @@
 import { auth } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { CATS, NAV, navLabel, navFilter, KIND_FIELDS, FILTERS, norm } from "./js/categories.js";
-import { fetchPosts, getPost, patchPost, removePost } from "./js/data.js";
+import { fetchPosts, getPost, setStatus, removePost } from "./js/data.js";
 import { $, h, toast, fail, dlg, openDlg, closeDlg, confirmDlg, card, skeletons, showPost } from "./js/ui.js";
 import { openPostForm, openReport, openReportsList } from "./js/admin.js";
 
@@ -66,8 +66,8 @@ const ctx = {
   edit: p => openPostForm(p, refresh, S.user),
   report: p => openReport(p),
   share: async p => { try { await navigator.clipboard.writeText(location.origin + location.pathname + "#/p/" + p.id); toast("Enlace copiado"); } catch { toast("No se pudo copiar el enlace."); } },
-  remove: async p => { if (!(await confirmDlg(`Se eliminará «${p.title}». Esta acción no se puede deshacer.`))) return; try { await removePost(p.id); closeDlg(); toast("Publicación eliminada"); refresh(); } catch (e) { fail(e); } },
-  toggle: async p => { try { await patchPost(p.id, { status: p.status === "published" ? "draft" : "published" }); closeDlg(); toast("Estado actualizado"); refresh(); } catch (e) { fail(e); } }
+  remove: async p => { if (!(await confirmDlg(`Se eliminará «${p.title}». Esta acción no se puede deshacer.`))) return; try { await removePost(p); closeDlg(); toast("Publicación eliminada"); refresh(); } catch (e) { fail(e); } },
+  toggle: async p => { try { await setStatus(p, p.status === "published" ? "draft" : "published"); closeDlg(); toast("Estado actualizado"); refresh(); } catch (e) { fail(e); } }
 };
 async function openById(id) {
   try {
@@ -87,11 +87,11 @@ async function show(key, q, force) {
 
 /* ---------- Inicio ---------- */
 const SECTIONS = [
-  ["Destacados", { field: "featured", value: true }, null],
+  ["Destacados", { scope: "featured" }, null],
   ["Publicaciones recientes", null, "all"],
-  ["Música reciente", { field: "group", value: "music" }, "music"],
-  ["Juegos y aplicaciones", { field: "group", op: "in", value: ["android", "ios", "pc", "consoles", "apps"] }, null],
-  ["Emuladores y herramientas", { field: "group", op: "in", value: ["emulators", "tools"] }, "emulators"]
+  ["Música reciente", { scope: "group:music" }, "music"],
+  ["Juegos y aplicaciones", { any: ["android", "ios", "pc", "consoles", "apps"].map(g => "group:" + g) }, null],
+  ["Emuladores y herramientas", { any: ["emulators", "tools"].map(g => "group:" + g) }, "emulators"]
 ];
 async function home() {
   const sig = S.sig;
@@ -109,7 +109,7 @@ async function home() {
 /* ---------- Listados ---------- */
 const kindOf = k => k === "music" ? "music" : CATS[k]?.kind;
 async function list(reset) {
-  const sig = S.sig, tok = S.q.split(/\s+/)[0] || "";
+  const sig = S.sig, tok = norm(S.q).split(/[^a-z0-9]+/).filter(t => t.length >= 2)[0] || "";
   if (reset) {
     Object.assign(S, { items: [], cursor: null, more: false });
     main.replaceChildren(h("h1", {}, (S.key === "drafts" ? "Borradores" : navLabel(S.key)) + (S.q ? ` · «${S.q}»` : "")), h("div", { id: "tools", class: "tools" }),
